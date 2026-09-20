@@ -628,6 +628,36 @@ const ISL_TUTOR_HINTS = {
   'Z': 'Hold dominant open flat palm vertically facing non-dominant horizontal palm.'
 };
 
+const GUIDE_STYLE_STORAGE_KEY = 'islFingerspellGuideStyle';
+let guideStyle = 'image';
+try {
+  guideStyle = localStorage.getItem(GUIDE_STYLE_STORAGE_KEY) === 'skeleton' ? 'skeleton' : 'image';
+} catch {
+  // Default to image
+}
+
+function getGuideImagePath(letter, style = guideStyle) {
+  if (style === 'skeleton' && mode === 'isl') {
+    return `pamphlet/isl-skeleton/${letter}.png`;
+  }
+  return `pamphlet/${mode}/${letter}.jpg`;
+}
+
+function setGuideStyle(newStyle) {
+  guideStyle = newStyle;
+  try {
+    localStorage.setItem(GUIDE_STYLE_STORAGE_KEY, guideStyle);
+  } catch {}
+
+  document.querySelectorAll('input[name="guideStyle"], input[name="tutorGuideStyle"]').forEach((radio) => {
+    radio.checked = radio.value === guideStyle;
+  });
+
+  const guideSrc = getGuideImagePath(tutorLetter);
+  if (els.tutorPreviewImg) els.tutorPreviewImg.src = guideSrc;
+  if (els.ghostGuideImg) els.ghostGuideImg.src = guideSrc;
+}
+
 let tutorLetter = 'A';
 
 function initTutor() {
@@ -641,6 +671,7 @@ function initTutor() {
       return opt;
     }),
   );
+  setGuideStyle(guideStyle);
   updateTutorLetter('A');
 }
 
@@ -660,11 +691,12 @@ function advanceToNextLetter() {
 function updateTutorLetter(letter) {
   tutorLetter = letter;
   tutorMatchedSince = null;
+  const guideSrc = getGuideImagePath(letter);
   if (els.tutorSelect) els.tutorSelect.value = letter;
   if (els.tutorTargetTitle) els.tutorTargetTitle.textContent = `Target: Letter ${letter}`;
-  if (els.tutorPreviewImg) els.tutorPreviewImg.src = `pamphlet/${mode}/${letter}.jpg`;
+  if (els.tutorPreviewImg) els.tutorPreviewImg.src = guideSrc;
   if (els.tutorHintText) els.tutorHintText.textContent = ISL_TUTOR_HINTS[letter] || `Sign the letter ${letter}.`;
-  if (els.ghostGuideImg) els.ghostGuideImg.src = `pamphlet/${mode}/${letter}.jpg`;
+  if (els.ghostGuideImg) els.ghostGuideImg.src = guideSrc;
   if (els.ghostGuide) els.ghostGuide.classList.remove('matched');
   if (els.ghostGuideLabel) {
     els.ghostGuideLabel.textContent = `Guide: ${letter}`;
@@ -811,6 +843,11 @@ function wireControls() {
   document.querySelectorAll('input[name="signSystem"]').forEach((radio) =>
     radio.addEventListener('change', () => applyMode(radio.value)),
   );
+
+  document.querySelectorAll('input[name="guideStyle"], input[name="tutorGuideStyle"]').forEach((radio) => {
+    radio.checked = radio.value === guideStyle;
+    radio.addEventListener('change', () => setGuideStyle(radio.value));
+  });
 
   els.pamphletButton.addEventListener('click', () => {
     renderPamphlet();

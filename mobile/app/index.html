@@ -86,6 +86,14 @@
         </div>
       </fieldset>
 
+      <fieldset class="segmented">
+        <legend>Guide style</legend>
+        <div class="segmented-row">
+          <label><input type="radio" name="guideStyle" value="image" checked><span>Image</span></label>
+          <label><input type="radio" name="guideStyle" value="skeleton"><span>Skeleton</span></label>
+        </div>
+      </fieldset>
+
       <label class="toggle">
         <input type="checkbox" id="autoCapture" checked>
         <span>Add a letter automatically when it's held steady</span>
@@ -144,6 +152,14 @@
           <p id="tutorHintText" class="tutor-hint">Point dominant index finger to touch non-dominant thumb tip.</p>
         </div>
       </div>
+
+      <fieldset class="segmented">
+        <legend>Guide style</legend>
+        <div class="segmented-row">
+          <label><input type="radio" name="tutorGuideStyle" value="image" checked><span>Image</span></label>
+          <label><input type="radio" name="tutorGuideStyle" value="skeleton"><span>Skeleton</span></label>
+        </div>
+      </fieldset>
 
       <label class="toggle">
         <input type="checkbox" id="tutorGuideToggle" checked>
