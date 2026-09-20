@@ -23,7 +23,7 @@
     <header class="topbar">
       <h1 class="wordmark" id="wordmark">ISL <span>Fingerspell</span></h1>
       <div class="topbar-actions">
-        <button class="pill" id="tutorButton" type="button" aria-haspopup="dialog">🎓 Learn</button>
+        <button class="pill" id="tutorButton" type="button" aria-haspopup="dialog">Learn</button>
         <button class="pill" id="pamphletButton" type="button" aria-haspopup="dialog">Letters</button>
         <button class="pill" id="settingsButton" type="button" aria-haspopup="dialog">Settings</button>
       </div>
@@ -33,10 +33,14 @@
       <video id="video" playsinline muted autoplay></video>
       <canvas id="overlay" aria-hidden="true"></canvas>
 
-      <!-- Transparent Ghost Guide on Camera for Learning -->
+      <!-- Transparent Guide on Camera for Learning -->
       <div class="ghost-guide" id="ghostGuide" hidden>
         <img id="ghostGuideImg" alt="Sign guide" src="pamphlet/isl/A.jpg">
-        <span class="ghost-guide-label" id="ghostGuideLabel">Guide: A</span>
+        <div class="ghost-guide-bar">
+          <button class="ghost-nav-btn" id="ghostPrevBtn" type="button" aria-label="Previous letter">◀</button>
+          <span class="ghost-guide-label" id="ghostGuideLabel">Guide: A</span>
+          <button class="ghost-nav-btn ghost-next-btn" id="ghostNextBtn" type="button" aria-label="Next letter">Next →</button>
+        </div>
       </div>
 
       <div class="glyph" id="glyph" data-state="idle" style="--fill: 0; --hold: 0; --threshold: 0.6">
@@ -120,11 +124,11 @@
     </form>
   </dialog>
 
-  <!-- Sign Language Tutor & Ghost Overlay Dialog -->
+  <!-- Sign Language Tutor Dialog -->
   <dialog class="sheet sheet-tutor" id="tutorDialog" aria-labelledby="tutorTitle">
     <form method="dialog">
-      <h2 id="tutorTitle">🎓 Sign Language Tutor</h2>
-      <p class="tutor-subtitle">Practice handshapes with a live ghost overlay on your camera</p>
+      <h2 id="tutorTitle">Sign Language Tutor</h2>
+      <p class="tutor-subtitle">Practice handshapes with a live guide overlay on your camera</p>
 
       <div class="tutor-card">
         <div class="tutor-preview-container">
@@ -143,7 +147,7 @@
 
       <label class="toggle">
         <input type="checkbox" id="tutorGuideToggle" checked>
-        <span>👻 Show Transparent Guide on Camera Feed</span>
+        <span>Show guide overlay on camera</span>
       </label>
 
       <div class="tutor-slider-row">
@@ -152,8 +156,8 @@
       </div>
 
       <div class="tutor-status-badge" id="tutorStatusBadge">
-        <span id="tutorStatusIcon">✋</span>
-        <span id="tutorStatusText">Align hands with guide to practice</span>
+        <span class="tutor-status-text" id="tutorStatusText">Align hand with guide to practice</span>
+        <button class="btn btn-primary btn-sm tutor-next-btn" id="tutorMatchNextBtn" type="button" hidden>Next Letter →</button>
       </div>
 
       <button class="btn btn-primary" value="close">Start Practice</button>

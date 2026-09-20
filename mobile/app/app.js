@@ -67,6 +67,8 @@ const els = {
   ghostGuide: $('ghostGuide'),
   ghostGuideImg: $('ghostGuideImg'),
   ghostGuideLabel: $('ghostGuideLabel'),
+  ghostPrevBtn: $('ghostPrevBtn'),
+  ghostNextBtn: $('ghostNextBtn'),
   tutorPreviewImg: $('tutorPreviewImg'),
   tutorPrevBtn: $('tutorPrevBtn'),
   tutorNextBtn: $('tutorNextBtn'),
@@ -78,7 +80,7 @@ const els = {
   tutorOpacityVal: $('tutorOpacityVal'),
   tutorStatusBadge: $('tutorStatusBadge'),
   tutorStatusText: $('tutorStatusText'),
-  tutorStatusIcon: $('tutorStatusIcon'),
+  tutorMatchNextBtn: $('tutorMatchNextBtn'),
 };
 const overlayContext = els.overlay.getContext('2d');
 
@@ -313,18 +315,14 @@ function tick() {
   adaptQuality(now);
 
   const rows = assembleLandmarks(hands, lastFace, includeFace);
-  // ISL letters are two-handed; classifying with one hand real and the other
-  // zero-filled (assembleLandmarks' fallback for a missing hand) feeds the
-  // model a shape it never saw in training and produces a confident-looking
-  // but meaningless prediction instead of no prediction at all. Wait for the
-  // mode's actual required hand count instead.
-  const requiredHands = meta.num_hands ?? 2;
+  // ISL signs include both two-handed signs (e.g. A, B, D) and single-handed
+  // signs (e.g. C, I, L, O). Require at least 1 visible hand to run classification.
   const seenHands = hands.landmarks?.length ?? 0;
-  if (!rows || seenHands < requiredHands) {
+  if (!rows || seenHands < 1) {
     presenceToken++;
     smoother.clear();
     updateLive(null, 0, false, now);
-    els.glyphCaption.textContent = requiredHands > 1 && seenHands > 0 ? 'Show both hands' : 'Show a letter';
+    els.glyphCaption.textContent = 'Show a letter';
     return;
   }
 
@@ -412,7 +410,7 @@ function drawHands(result) {
 function updateLive(letter, confidence, ready, now) {
   state.live = letter ? { letter, confidence, ready } : null;
   renderGlyph(updateHold(letter, ready, now));
-  updateTutorMatch(letter, confidence);
+  updateTutorMatch(letter, confidence, now);
 }
 
 function updateHold(letter, ready, now) {
@@ -625,37 +623,65 @@ function initTutor() {
   updateTutorLetter('A');
 }
 
+let tutorMatchedSince = null;
+
+function stepTutorLetter(delta) {
+  const letters = meta?.class_names ?? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const idx = letters.indexOf(tutorLetter);
+  const nextIdx = (idx + delta + letters.length) % letters.length;
+  updateTutorLetter(letters[nextIdx]);
+}
+
+function advanceToNextLetter() {
+  stepTutorLetter(1);
+}
+
 function updateTutorLetter(letter) {
   tutorLetter = letter;
+  tutorMatchedSince = null;
   if (els.tutorSelect) els.tutorSelect.value = letter;
   if (els.tutorTargetTitle) els.tutorTargetTitle.textContent = `Target: Letter ${letter}`;
   if (els.tutorPreviewImg) els.tutorPreviewImg.src = `pamphlet/${mode}/${letter}.jpg`;
   if (els.tutorHintText) els.tutorHintText.textContent = ISL_TUTOR_HINTS[letter] || `Sign the letter ${letter}.`;
   if (els.ghostGuideImg) els.ghostGuideImg.src = `pamphlet/${mode}/${letter}.jpg`;
+  if (els.ghostGuide) els.ghostGuide.classList.remove('matched');
   if (els.ghostGuideLabel) {
-    els.ghostGuideLabel.classList.remove('matched');
     els.ghostGuideLabel.textContent = `Guide: ${letter}`;
+  }
+  if (els.tutorStatusBadge) {
+    els.tutorStatusBadge.classList.remove('matched');
+    els.tutorStatusText.textContent = 'Align hand with guide to practice';
+  }
+  if (els.tutorMatchNextBtn) {
+    els.tutorMatchNextBtn.hidden = true;
   }
 }
 
-function updateTutorMatch(letter, confidence) {
+function updateTutorMatch(letter, confidence, now = performance.now()) {
   if (!els.ghostGuide || els.ghostGuide.hidden) return;
   const isMatch = letter === tutorLetter && confidence >= 0.7;
   if (isMatch) {
-    els.ghostGuideLabel.classList.add('matched');
-    els.ghostGuideLabel.textContent = `🎯 ${tutorLetter} (${Math.round(confidence * 100)}%)`;
+    els.ghostGuide.classList.add('matched');
+    els.ghostGuideLabel.textContent = `Matched: ${tutorLetter} (${Math.round(confidence * 100)}%)`;
     if (els.tutorStatusBadge) {
       els.tutorStatusBadge.classList.add('matched');
-      els.tutorStatusIcon.textContent = '🎯';
-      els.tutorStatusText.textContent = `EXCELLENT! Matched '${tutorLetter}' (${Math.round(confidence * 100)}%)`;
+      els.tutorStatusText.textContent = `Matched: ${tutorLetter} (${Math.round(confidence * 100)}%)`;
+      if (els.tutorMatchNextBtn) els.tutorMatchNextBtn.hidden = false;
+    }
+    // Auto-advance if held matched for 1.2s
+    tutorMatchedSince ??= now;
+    if (now - tutorMatchedSince >= 1200) {
+      tutorMatchedSince = now + 400;
+      advanceToNextLetter();
     }
   } else {
-    els.ghostGuideLabel.classList.remove('matched');
+    tutorMatchedSince = null;
+    els.ghostGuide.classList.remove('matched');
     els.ghostGuideLabel.textContent = `Guide: ${tutorLetter}`;
     if (els.tutorStatusBadge) {
       els.tutorStatusBadge.classList.remove('matched');
-      els.tutorStatusIcon.textContent = '✋';
-      els.tutorStatusText.textContent = letter ? `Target: ${tutorLetter} | Detected: ${letter}` : 'Align hands with guide to practice';
+      els.tutorStatusText.textContent = letter ? `Target: ${tutorLetter} | Detected: ${letter}` : 'Align hand with guide to practice';
+      if (els.tutorMatchNextBtn) els.tutorMatchNextBtn.hidden = true;
     }
   }
 }
@@ -775,19 +801,11 @@ function wireControls() {
     els.tutorDialog.showModal();
   });
 
-  els.tutorPrevBtn?.addEventListener('click', () => {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const idx = letters.indexOf(tutorLetter);
-    const nextIdx = (idx - 1 + letters.length) % letters.length;
-    updateTutorLetter(letters[nextIdx]);
-  });
-
-  els.tutorNextBtn?.addEventListener('click', () => {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const idx = letters.indexOf(tutorLetter);
-    const nextIdx = (idx + 1) % letters.length;
-    updateTutorLetter(letters[nextIdx]);
-  });
+  els.tutorPrevBtn?.addEventListener('click', () => stepTutorLetter(-1));
+  els.tutorNextBtn?.addEventListener('click', advanceToNextLetter);
+  els.ghostPrevBtn?.addEventListener('click', () => stepTutorLetter(-1));
+  els.ghostNextBtn?.addEventListener('click', advanceToNextLetter);
+  els.tutorMatchNextBtn?.addEventListener('click', advanceToNextLetter);
 
   els.tutorSelect?.addEventListener('change', (e) => {
     updateTutorLetter(e.target.value);
