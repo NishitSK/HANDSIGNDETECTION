@@ -1,0 +1,84 @@
+{
+  "benchmark": {
+    "LSTM": {
+      "architecture": "LSTM",
+      "test_accuracy": 0.4970427661510464,
+      "epochs_completed": 1,
+      "elapsed_minutes": 3.05,
+      "budget_minutes": 2,
+      "params": 4231834,
+      "error": null
+    },
+    "GRU": {
+      "architecture": "GRU",
+      "test_accuracy": 0.7597816196542311,
+      "epochs_completed": 1,
+      "elapsed_minutes": 3.04,
+      "budget_minutes": 2,
+      "params": 3222170,
+      "error": null
+    },
+    "TCN": {
+      "architecture": "TCN",
+      "test_accuracy": 0.9096906278434941,
+      "epochs_completed": 1,
+      "elapsed_minutes": 2.87,
+      "budget_minutes": 2,
+      "params": 1206170,
+      "error": null
+    },
+    "TRANSFORMER": {
+      "architecture": "TRANSFORMER",
+      "test_accuracy": 0.030254777070063694,
+      "epochs_completed": 1,
+      "elapsed_minutes": 3.14,
+      "budget_minutes": 2,
+      "params": 9619866,
+      "error": null
+    }
+  },
+  "final": [
+    {
+      "architecture": "LSTM",
+      "test_accuracy": 0.9665605095541401,
+      "epochs_completed": 7,
+      "elapsed_minutes": 110.16,
+      "budget_minutes": 109.02,
+      "params": 4231834,
+      "error": null
+    },
+    {
+      "architecture": "GRU",
+      "test_accuracy": 0.9777070063694268,
+      "epochs_completed": 7,
+      "elapsed_minutes": 110.31,
+      "budget_minutes": 109.18,
+      "params": 3222170,
+      "error": null
+    },
+    {
+      "architecture": "TCN",
+      "test_accuracy": 0.9849863512283894,
+      "epochs_completed": 11,
+      "elapsed_minutes": 29.72,
+      "budget_minutes": 112.09,
+      "params": 1206170,
+      "error": null
+    },
+    {
+      "architecture": "TRANSFORMER",
+      "test_accuracy": 0.03753412192902639,
+      "epochs_completed": 12,
+      "elapsed_minutes": 108.79,
+      "budget_minutes": 107.61,
+      "params": 9619866,
+      "error": null
+    }
+  ],
+  "allocation": {
+    "LSTM": 109.01736380209272,
+    "GRU": 109.17860513038909,
+    "TCN": 112.0916235527466,
+    "TRANSFORMER": 107.61240751477159
+  }
+}

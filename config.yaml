@@ -1,0 +1,68 @@
+camera:
+  device_id: 0
+  fps: 30
+  height: 720
+  width: 1280
+data:
+  dataset_path: data/RealSign_ISL
+  dataset_paths:
+  - C:/Users/Acer/Downloads/archive (5)
+  - C:/Users/Acer/Downloads/archive (4)
+  landmark_path: data/landmarks
+  min_samples_per_class: 100
+  processed_path: data/processed
+  train_test_split: 0.8
+detection:
+  confidence_threshold: 0.6
+  fps_target: 30
+  gesture_hold_frames: 10
+  min_detection_confidence: 0.5
+  min_tracking_confidence: 0.5
+  smoothing_window: 5
+gui:
+  show_confidence: true
+  show_landmarks: true
+  theme: dark
+  window_height: 900
+  window_width: 1400
+model:
+  d_model: 128
+  dropout: 0.3
+  ff_dim: 256
+  hidden_units: 256
+  input_features: 186
+  learning_rate: 0.001
+  name: ISL_Letter_both_hands_face
+  num_classes: 26
+  num_heads: 4
+  num_layers: 3
+  num_transformer_blocks: 3
+  sequence_length: 30
+  target_seq_length: 1
+  type: TCN
+nlp:
+  max_length: 100
+  model_name: google/flan-t5-base
+  num_beams: 4
+  temperature: 0.7
+paths:
+  checkpoints_dir: models/checkpoints
+  dataset_cache: data/cache
+  logs_dir: logs
+  model_path: models/saved/isl_model.h5
+  model_save_dir: models/saved
+training:
+  augmentation_probability: 0.9
+  batch_size: 16
+  data_augmentation: true
+  early_stopping_min_epochs: 10
+  early_stopping_patience: 40
+  early_stopping_target_accuracy: 0.75
+  epochs: 40
+  reduce_lr_patience: 10
+  validation_split: 0.2
+tts:
+  engine: pyttsx3
+  rate: 150
+  voice_index: 1
+  volume: 1.0

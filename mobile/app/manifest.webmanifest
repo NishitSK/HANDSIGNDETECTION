@@ -1,0 +1,12 @@
+{
+  "name": "ISL Fingerspell",
+  "short_name": "Fingerspell",
+  "description": "Spell words in Indian Sign Language with your camera and hear them spoken.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0B1633",
+  "theme_color": "#0B1633",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B1633">
+  <title>ISL Fingerspell</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- One request per family: an unknown family name fails the whole CSS request. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.17.0/dist/tf-backend-wasm.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1 class="wordmark" id="wordmark">ISL <span>Fingerspell</span></h1>
+      <div class="topbar-actions">
+        <button class="pill" id="pamphletButton" type="button" aria-haspopup="dialog">Letters</button>
+        <button class="pill" id="settingsButton" type="button" aria-haspopup="dialog">Settings</button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage" data-facing="user">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+
+      <div class="glyph" id="glyph" data-state="idle" style="--fill: 0; --hold: 0; --threshold: 0.6">
+        <div class="glyph-box">
+          <span class="glyph-outline" id="glyphOutline" aria-hidden="true"></span>
+          <span class="glyph-fill" id="glyphFill" aria-hidden="true"></span>
+          <span class="glyph-threshold" aria-hidden="true"></span>
+        </div>
+        <div class="glyph-hold" aria-hidden="true"></div>
+        <p class="glyph-caption" id="glyphCaption">Show a letter</p>
+      </div>
+
+      <div class="status" id="status" role="status" aria-live="polite">
+        <p class="status-message" id="statusMessage">Loading…</p>
+        <button class="btn btn-primary" id="retryButton" type="button" hidden>Try again</button>
+      </div>
+    </main>
+
+    <section class="tape" aria-label="Spelled text">
+      <p class="tape-words" id="tapeWords" data-kind="hint">Hold a letter steady to add it. Use Space between words.</p>
+      <p class="tape-current"><span id="tapeCurrent"></span><span class="caret" aria-hidden="true"></span></p>
+      <p class="sr-only" id="announcer" aria-live="polite"></p>
+    </section>
+
+    <nav class="controls" aria-label="Spelling controls">
+      <button class="btn" id="deleteButton" type="button">Delete</button>
+      <button class="btn btn-primary" id="addButton" type="button" disabled>Add letter</button>
+      <button class="btn" id="spaceButton" type="button">Space</button>
+      <button class="btn btn-quiet" id="clearButton" type="button">Clear all</button>
+      <button class="btn btn-outline span-2" id="speakButton" type="button">Speak</button>
+    </nav>
+  </div>
+
+  <dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
+    <form method="dialog">
+      <h2 id="settingsTitle">Settings</h2>
+
+      <fieldset class="segmented">
+        <legend>Sign system</legend>
+        <div class="segmented-row">
+          <label><input type="radio" name="signSystem" value="isl" checked><span>ISL</span></label>
+          <label><input type="radio" name="signSystem" value="asl"><span>ASL</span></label>
+        </div>
+      </fieldset>
+
+      <label class="toggle">
+        <input type="checkbox" id="autoCapture" checked>
+        <span>Add a letter automatically when it's held steady</span>
+      </label>
+
+      <label class="toggle">
+        <input type="checkbox" id="showLandmarks" checked>
+        <span>Show hand tracking</span>
+      </label>
+
+      <fieldset class="segmented">
+        <legend>Camera</legend>
+        <div class="segmented-row">
+          <label><input type="radio" name="facing" value="user" checked><span>Front</span></label>
+          <label><input type="radio" name="facing" value="environment"><span>Back</span></label>
+        </div>
+      </fieldset>
+
+      <label class="toggle">
+        <input type="checkbox" id="mirrorInput">
+        <span>Mirror camera input<small>Try this if letters are often read as a different letter.</small></span>
+      </label>
+
+      <p class="readout" id="readout"></p>
+
+      <button class="btn btn-primary" value="close">Done</button>
+    </form>
+  </dialog>
+
+  <dialog class="sheet sheet-pamphlet" id="pamphlet" aria-labelledby="pamphletTitle">
+    <form method="dialog">
+      <h2 id="pamphletTitle">Letters</h2>
+      <p class="pamphlet-hint">How to sign each letter in <span id="pamphletSystem">ISL</span>.</p>
+      <div class="pamphlet-grid" id="pamphletGrid"></div>
+      <button class="btn btn-primary" value="close">Done</button>
+    </form>
+  </dialog>
+</body>
+</html>

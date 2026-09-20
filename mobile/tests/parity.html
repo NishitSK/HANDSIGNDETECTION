@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISL model parity</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+  <style>
+    body { margin: 24px; background: #0b1633; color: #f4f6fb; font: 14px/1.5 ui-monospace, Consolas, monospace; }
+    code { color: #ffb23f; }
+    progress { width: min(360px, 100%); vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <h1>Model parity (browser)</h1>
+  <p>
+    Scores a converted model on the held-out test split from <code>export_reference.py</code>
+    and compares it with Keras. Open it through <code>python mobile/serve_https.py --test</code>.
+    Options: <code>?model=../app/model/isl/model.json</code> (default: the ISL app model),
+    <code>?data=../../results/mobile_verification_asl/</code> (default: the ISL export dir),
+    <code>?backend=cpu</code>, <code>?features=126</code>, <code>?limit=500</code>.
+  </p>
+  <p>Backend: <span id="backend">…</span> <progress id="progress" max="1" value="0"></progress></p>
+  <pre id="result">Running…</pre>
+
+  <script type="module">
+    import { runParity } from './parity_core.mjs';
+
+    const params = new URLSearchParams(location.search);
+    const featureCount = Number(params.get('features') ?? 186);
+    const backend = params.get('backend') ?? 'webgl';
+    const limit = params.has('limit') ? Number(params.get('limit')) : undefined;
+    const modelUrl = params.get('model') ?? '../app/model/isl/model.json';
+    const DATA = params.get('data') ?? '../../results/mobile_verification/';
+
+    const fetchOk = async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+      return response;
+    };
+    const readFloat32 = async (name) => new Float32Array(await (await fetchOk(DATA + name)).arrayBuffer());
+
+    try {
+      if (!(await tf.setBackend(backend))) throw new Error(`TF.js backend "${backend}" is unavailable`);
+      await tf.ready();
+      document.getElementById('backend').textContent = tf.getBackend();
+
+      const [meta, pythonFrames, rawLandmarks, kerasProbs, model] = await Promise.all([
+        fetchOk(DATA + 'meta.json').then((r) => r.json()),
+        readFloat32('x_test_frames_186.f32'),
+        readFloat32('raw_landmarks_62x3.f32'),
+        readFloat32(featureCount === 186 ? 'keras_probs_full.f32' : 'keras_probs_hands_only.f32'),
+        tf.loadGraphModel(modelUrl),
+      ]);
+
+      const progress = document.getElementById('progress');
+      const result = await runParity({
+        tf,
+        model,
+        meta,
+        pythonFrames,
+        rawLandmarks,
+        kerasProbs,
+        featureCount,
+        limit,
+        onProgress: (fraction) => { progress.value = fraction; },
+      });
+      result.model = modelUrl;
+      window.parityResult = result;
+      document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+    } catch (error) {
+      window.parityResult = { error: String(error?.message ?? error) };
+      document.getElementById('result').textContent = String(error?.stack ?? error);
+    }
+  </script>
+</body>
+</html>

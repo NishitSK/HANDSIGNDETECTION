@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ISL MediaPipe parity</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+  <style>
+    body { margin: 24px; background: #0b1633; color: #f4f6fb; font: 14px/1.5 ui-monospace, Consolas, monospace; }
+    code { color: #ffb23f; }
+    progress { width: min(360px, 100%); vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <h1>MediaPipe Web vs Python landmarks</h1>
+  <p>
+    Runs MediaPipe Web on held-out test photos, compares its landmarks with the Python
+    extraction the model was trained on, and checks whether the browser pipeline predicts
+    the same letter as Keras. Open it through <code>python mobile/serve_https.py --test</code>.
+    Options: <code>?perClass=2</code> (photos per letter), <code>?model=../app/model/isl/model.json</code>,
+    <code>?features=126</code> (126 = hands only, 186 = hands + face), <code>?keras=hands_only</code>
+    (matches the <code>keras_probs_&lt;keras&gt;.f32</code> file from export_reference.py).
+  </p>
+  <p><progress id="progress" max="1" value="0"></progress> <span id="count"></span></p>
+  <pre id="result">Loading…</pre>
+
+  <script type="module">
+    import { FilesetResolver, HandLandmarker, FaceLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
+    import { assembleLandmarks, normalizeFrame, tileSequence, argmax } from '../app/pipeline.mjs';
+
+    const params = new URLSearchParams(location.search);
+    const perClass = Number(params.get('perClass') ?? 2);
+    const featureCount = Number(params.get('features') ?? 126);
+    const includeFace = featureCount === 186;
+    const modelUrl = params.get('model') ?? '../app/model/isl/model.json';
+    const kerasSuffix = params.get('keras') ?? (includeFace ? 'full' : 'hands_only');
+    const DATA = '../../results/mobile_verification/';
+    const TASKS_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
+    const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+    const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+    function seqLenOf(model) {
+      const shape = model.inputs[0].shape;
+      const len = shape.length > 2 ? shape.at(-2) : 1;
+      return len > 0 ? len : 1;
+    }
+
+    const fetchOk = async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+      return response;
+    };
+    const loadImage = (url) =>
+      new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error(`could not load ${url}`));
+        image.src = url;
+      });
+    const quantile = (values, q) => {
+      if (!values.length) return null;
+      const sorted = [...values].sort((a, b) => a - b);
+      return +sorted[Math.floor(q * (sorted.length - 1))].toFixed(5);
+    };
+
+    try {
+      await tf.setBackend('webgl');
+      await tf.ready();
+
+      const [meta, raw, kerasProbs, model, vision] = await Promise.all([
+        fetchOk(DATA + 'meta.json').then((r) => r.json()),
+        fetchOk(DATA + 'raw_landmarks_62x3.f32').then((r) => r.arrayBuffer()).then((b) => new Float32Array(b)),
+        fetchOk(DATA + `keras_probs_${kerasSuffix}.f32`).then((r) => r.arrayBuffer()).then((b) => new Float32Array(b)),
+        tf.loadGraphModel(modelUrl),
+        FilesetResolver.forVisionTasks(TASKS_WASM),
+      ]);
+      if (!meta.test_images) throw new Error('meta.json has no test_images; re-run mobile/tests/export_reference.py.');
+      const seqLen = seqLenOf(model);
+
+      // Same detection threshold as the Python extraction that produced the training data.
+      const hands = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: HAND_MODEL },
+        runningMode: 'IMAGE',
+        numHands: 2,
+        minHandDetectionConfidence: 0.7,
+      });
+      // The shipped models are hands-only, so this normally stays unused — only
+      // loaded when explicitly testing a 186-feature (hands+face) model.
+      const faces = includeFace
+        ? await FaceLandmarker.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: FACE_MODEL },
+            runningMode: 'IMAGE',
+            numFaces: 1,
+            minFaceDetectionConfidence: 0.7,
+          })
+        : null;
+
+      const picked = [];
+      const perLabel = new Map();
+      meta.y_test.forEach((label, i) => {
+        const taken = perLabel.get(label) ?? 0;
+        if (taken < perClass) {
+          picked.push(i);
+          perLabel.set(label, taken + 1);
+        }
+      });
+
+      const numClasses = meta.num_classes;
+      const s = {
+        samples: 0, webFoundHand: 0, sameHandsPresent: 0, handednessSwaps: 0,
+        pythonFace: 0, webFace: 0, handXy: [], handZ: [], faceXy: [],
+        agreeWithKeras: 0, correctWeb: 0, correctKeras: 0,
+      };
+      const progress = document.getElementById('progress');
+      const count = document.getElementById('count');
+
+      for (const [done, i] of picked.entries()) {
+        const image = await loadImage('../../' + meta.test_images[i].replaceAll('\\', '/'));
+        const rows = assembleLandmarks(hands.detect(image), faces?.detect(image) ?? null, includeFace);
+        const py = raw.subarray(i * 186, (i + 1) * 186);
+        const present = (values, start, length) => values.slice(start * 3, (start + length) * 3).some((v) => v !== 0);
+        const pyLeft = present(py, 0, 21);
+        const pyRight = present(py, 21, 21);
+        const pyFace = present(py, 42, 20);
+        const label = meta.y_test[i];
+        const kerasPrediction = argmax(kerasProbs.subarray(i * numClasses, (i + 1) * numClasses));
+
+        s.samples++;
+        s.pythonFace += pyFace;
+        s.correctKeras += kerasPrediction === label;
+
+        if (rows) {
+          s.webFoundHand++;
+          const flat = rows.flat();
+          const webLeft = present(flat, 0, 21);
+          const webRight = present(flat, 21, 21);
+          const webFace = present(flat, 42, 20);
+          s.webFace += webFace;
+
+          const wristGap = (webPoint, pyPoint) =>
+            Math.hypot(rows[webPoint][0] - py[pyPoint * 3], rows[webPoint][1] - py[pyPoint * 3 + 1]);
+          const bothHandsBoth = webLeft && webRight && pyLeft && pyRight;
+          const swapped =
+            (webLeft === pyRight && webRight === pyLeft && webLeft !== webRight) ||
+            (bothHandsBoth && wristGap(0, 21) + wristGap(21, 0) < wristGap(0, 0) + wristGap(21, 21));
+
+          if (swapped) {
+            s.handednessSwaps++;
+          } else if (webLeft === pyLeft && webRight === pyRight) {
+            s.sameHandsPresent++;
+            for (let p = 0; p < 42; p++) {
+              if ((p < 21 && !pyLeft) || (p >= 21 && !pyRight)) continue;
+              s.handXy.push(Math.hypot(rows[p][0] - py[p * 3], rows[p][1] - py[p * 3 + 1]));
+              s.handZ.push(Math.abs(rows[p][2] - py[p * 3 + 2]));
+            }
+          }
+          if (pyFace && webFace) {
+            for (let p = 42; p < 62; p++) s.faceXy.push(Math.hypot(rows[p][0] - py[p * 3], rows[p][1] - py[p * 3 + 1]));
+          }
+
+          const probabilities = tf.tidy(() =>
+            model.predict(tf.tensor3d(tileSequence(normalizeFrame(rows), seqLen), [1, seqLen, featureCount])).dataSync(),
+          );
+          const webPrediction = argmax(probabilities);
+          s.agreeWithKeras += webPrediction === kerasPrediction;
+          s.correctWeb += webPrediction === label;
+        }
+
+        progress.value = (done + 1) / picked.length;
+        count.textContent = `${done + 1} / ${picked.length} photos`;
+      }
+
+      const pct = (value) => +((100 * value) / s.samples).toFixed(1);
+      const result = {
+        photos: s.samples,
+        webFoundHandPct: pct(s.webFoundHand),
+        sameHandsDetectedPct: pct(s.sameHandsPresent),
+        handednessSwaps: s.handednessSwaps,
+        faceDetected: { python: s.pythonFace, web: s.webFace },
+        handXyError: { median: quantile(s.handXy, 0.5), p95: quantile(s.handXy, 0.95) },
+        handZError: { median: quantile(s.handZ, 0.5), p95: quantile(s.handZ, 0.95) },
+        faceXyError: { median: quantile(s.faceXy, 0.5), p95: quantile(s.faceXy, 0.95) },
+        sameLetterAsKerasPct: pct(s.agreeWithKeras),
+        browserPipelineAccuracyPct: pct(s.correctWeb),
+        kerasAccuracyOnSamePhotosPct: pct(s.correctKeras),
+      };
+      window.mediapipeParityResult = result;
+      document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+    } catch (error) {
+      window.mediapipeParityResult = { error: String(error?.message ?? error) };
+      document.getElementById('result').textContent = String(error?.stack ?? error);
+    }
+  </script>
+</body>
+</html>

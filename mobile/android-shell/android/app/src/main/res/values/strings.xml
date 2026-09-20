@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ISL Fingerspell</string>
+    <string name="title_activity_main">ISL Fingerspell</string>
+    <string name="package_name">com.islfingerspell.app</string>
+    <string name="custom_url_scheme">com.islfingerspell.app</string>
+</resources>

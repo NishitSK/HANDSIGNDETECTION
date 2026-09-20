@@ -1,0 +1,21 @@
+{
+  "class_names": [
+    "C",
+    "T"
+  ],
+  "num_classes": 2,
+  "input_shape": [
+    30,
+    186
+  ],
+  "model_type": "TCN",
+  "training_config": {
+    "augmentation_probability": 0.9,
+    "batch_size": 8,
+    "data_augmentation": true,
+    "early_stopping_patience": 40,
+    "epochs": 100,
+    "reduce_lr_patience": 10,
+    "validation_split": 0.2
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "class_names": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z"
+  ],
+  "num_classes": 26,
+  "input_shape": [
+    30,
+    126
+  ],
+  "model_type": "TCN",
+  "training_config": {
+    "augmentation_probability": 0.9,
+    "batch_size": 16,
+    "data_augmentation": true,
+    "early_stopping_min_epochs": 10,
+    "early_stopping_patience": 40,
+    "early_stopping_target_accuracy": 0.75,
+    "epochs": 40,
+    "reduce_lr_patience": 10,
+    "validation_split": 0.2
+  }
+}

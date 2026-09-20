@@ -1,0 +1,102 @@
+# .gitignore for ISL Translation System
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment & Node
+venv/
+.venv/
+.venv*/
+ENV/
+env/
+node_modules/
+**/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Data and Models (large files)
+# Exclude entire dataset folders (87,562+ images - too large for GitHub)
+data/ISL_dataset/
+data/ISL_DATASETS_2/
+data/datasets/
+data/n_dataset/
+data/RealSign_ISL/
+data/ASL_Alphabet_v2/
+data/ASL_Alphabet_hf/
+data/landmarks/
+data/processed/
+data/cache/
+data/*/*.jpg
+data/*/*.jpeg
+data/*/*.png
+
+# Model files & weights (large binaries)
+*.h5
+*.pkl
+models/saved/*.h5
+models/checkpoints/*.h5
+results/**/*.h5
+
+# Logs and TensorBoard
+logs/*.png
+logs/*.txt
+logs/*.csv
+logs/events.*
+*.tfevents*
+events.out.tfevents.*
+
+# Test downloads & scratch images
+test_downloads/
+sample_internet.jpg
+
+# Mobile web app: self-signed dev certificate (includes a private key)
+mobile/.certs/
+
+# Mobile verification exports (regenerable, binary)
+results/mobile_verification*/
+*.f32
+
+# Temporary files
+*.tmp
+temp_tts.mp3
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Keep directory structure
+!data/ISL_dataset/.gitkeep
+!data/landmarks/.gitkeep
+!data/processed/.gitkeep
+!models/saved/.gitkeep
+!models/checkpoints/.gitkeep
+!logs/.gitkeep

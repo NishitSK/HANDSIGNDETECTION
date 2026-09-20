@@ -1,0 +1,305 @@
+{
+  "correct_sentence": [
+    {
+      "input": "who you",
+      "output": "Who are you?"
+    },
+    {
+      "input": "WHO YOU",
+      "output": "Who are you?"
+    },
+    {
+      "input": "what name",
+      "output": "What is your name?"
+    },
+    {
+      "input": "what your name",
+      "output": "What is your name?"
+    },
+    {
+      "input": "what you",
+      "output": "What do you want?"
+    },
+    {
+      "input": "how you",
+      "output": "How are you?"
+    },
+    {
+      "input": "how many",
+      "output": "How many?"
+    },
+    {
+      "input": "where you",
+      "output": "Where are you?"
+    },
+    {
+      "input": "when you",
+      "output": "When are you coming?"
+    },
+    {
+      "input": "why you",
+      "output": "Why are you here?"
+    },
+    {
+      "input": "hello",
+      "output": "Hello."
+    },
+    {
+      "input": "hello friend",
+      "output": "Hello friend."
+    },
+    {
+      "input": "thank you",
+      "output": "Thank you."
+    },
+    {
+      "input": "sorry",
+      "output": "Sorry."
+    },
+    {
+      "input": "please",
+      "output": "Please."
+    },
+    {
+      "input": "help",
+      "output": "Help me."
+    },
+    {
+      "input": "help me",
+      "output": "Help me."
+    },
+    {
+      "input": "help me now",
+      "output": "Help me me now."
+    },
+    {
+      "input": "i go",
+      "output": "I am going."
+    },
+    {
+      "input": "i come",
+      "output": "I am coming."
+    },
+    {
+      "input": "you come",
+      "output": "You are coming."
+    },
+    {
+      "input": "you go",
+      "output": "You are going."
+    },
+    {
+      "input": "i eat",
+      "output": "I am eating."
+    },
+    {
+      "input": "i drink",
+      "output": "I am drinking."
+    },
+    {
+      "input": "i go home",
+      "output": "I am going home."
+    },
+    {
+      "input": "yes",
+      "output": "Yes."
+    },
+    {
+      "input": "no",
+      "output": "No."
+    },
+    {
+      "input": "good",
+      "output": "Good."
+    },
+    {
+      "input": "bad",
+      "output": "Bad."
+    },
+    {
+      "input": "we go",
+      "output": "We are go."
+    },
+    {
+      "input": "they come",
+      "output": "They are come."
+    },
+    {
+      "input": "he eat",
+      "output": "He is eat."
+    },
+    {
+      "input": "she drink",
+      "output": "She is drink."
+    },
+    {
+      "input": "it sleep",
+      "output": "It is sleep."
+    },
+    {
+      "input": "where they",
+      "output": "Where are they?"
+    },
+    {
+      "input": "what he",
+      "output": "What is he?"
+    },
+    {
+      "input": "why i",
+      "output": "Why am I?"
+    },
+    {
+      "input": "how it work",
+      "output": "How is it work?"
+    },
+    {
+      "input": "i happy see you",
+      "output": "I happy see you."
+    },
+    {
+      "input": "what time now",
+      "output": "What time now?"
+    },
+    {
+      "input": "news important today weather",
+      "output": "News important today weather."
+    },
+    {
+      "input": "please help me understand",
+      "output": "Please help me understand."
+    },
+    {
+      "input": "government new policy announce",
+      "output": "Government new policy announce."
+    },
+    {
+      "input": "india win match today",
+      "output": "India win match today."
+    },
+    {
+      "input": "weather rain tomorrow",
+      "output": "Weather rain tomorrow."
+    },
+    {
+      "input": "a apple",
+      "output": "an apple."
+    },
+    {
+      "input": "i want a egg",
+      "output": "I want an egg."
+    },
+    {
+      "input": "i",
+      "output": "I."
+    },
+    {
+      "input": "  spaced   out  words ",
+      "output": "Spaced out words."
+    },
+    {
+      "input": "",
+      "output": ""
+    },
+    {
+      "input": "don't go",
+      "output": "Don't go."
+    },
+    {
+      "input": "H E L L O",
+      "output": "H e l l o."
+    },
+    {
+      "input": "hello!",
+      "output": "Hello!"
+    },
+    {
+      "input": "who?",
+      "output": "Who?"
+    },
+    {
+      "input": "a umbrella please",
+      "output": "an umbrella please."
+    }
+  ],
+  "process_sequence": [
+    {
+      "input": [
+        "HELLO"
+      ],
+      "output": "Hello."
+    },
+    {
+      "input": [
+        "HELLO",
+        "FRIEND"
+      ],
+      "output": "Hello friend."
+    },
+    {
+      "input": [
+        "WHO",
+        "YOU"
+      ],
+      "output": "Who are you?"
+    },
+    {
+      "input": [
+        "I",
+        "GO"
+      ],
+      "output": "I am going."
+    },
+    {
+      "input": [
+        "I",
+        "I",
+        "GO"
+      ],
+      "output": "I am going."
+    },
+    {
+      "input": [
+        "THANK",
+        "YOU",
+        "THANK"
+      ],
+      "output": "Thank you."
+    },
+    {
+      "input": [],
+      "output": ""
+    },
+    {
+      "input": [
+        "H",
+        "E",
+        "L",
+        "L",
+        "O"
+      ],
+      "output": "H e l o."
+    },
+    {
+      "input": [
+        "DON'T",
+        "GO"
+      ],
+      "output": "do not go."
+    },
+    {
+      "input": [
+        "WHAT",
+        "YOUR",
+        "NAME"
+      ],
+      "output": "What is your name?"
+    },
+    {
+      "input": [
+        "A",
+        "APPLE"
+      ],
+      "output": "an apple."
+    }
+  ]
+}
