@@ -1,5 +1,5 @@
 import { FilesetResolver, HandLandmarker, FaceLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs';
-import { argmax, assembleLandmarks, featureLayout, normalizeFrame, PredictionSmoother, tileSequence } from './pipeline.mjs';
+import { argmax, assembleLandmarks, assembleLandmarkCandidates, featureLayout, normalizeFrame, PredictionSmoother, tileSequence } from './pipeline.mjs';
 import { processSequence } from './grammar.mjs';
 
 const TASKS_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
@@ -314,11 +314,11 @@ function tick() {
   drawHands(hands);
   adaptQuality(now);
 
-  const rows = assembleLandmarks(hands, lastFace, includeFace);
+  const candidateRows = assembleLandmarkCandidates(hands, lastFace, includeFace);
   // ISL signs include both two-handed signs (e.g. A, B, D) and single-handed
-  // signs (e.g. C, I, L, O). Require at least 1 visible hand to run classification.
+  // signs (e.g. C, I, L, O, U, V). Require at least 1 visible hand to run classification.
   const seenHands = hands.landmarks?.length ?? 0;
-  if (!rows || seenHands < 1) {
+  if (!candidateRows || seenHands < 1) {
     presenceToken++;
     smoother.clear();
     updateLive(null, 0, false, now);
@@ -331,7 +331,7 @@ function tick() {
   // classify() calls, keep the hold timer and glyph animation advancing at full frame
   // rate off the last known result, so throttling the model doesn't look like stutter.
   if (!classifying && frameIndex % quality.classify === 0) {
-    classify(rows);
+    classify(candidateRows);
   } else {
     renderGlyph(updateHold(state.live?.letter ?? null, Boolean(state.live?.ready), now));
   }
@@ -351,22 +351,43 @@ function adaptQuality(now) {
   }
 }
 
-async function classify(rows) {
+async function classify(candidateRows) {
   classifying = true;
   const token = presenceToken;
   const started = performance.now();
 
-  tileSequence(normalizeFrame(rows), seqLen, inputBuffer);
-  const output = tf.tidy(() => model.predict(tf.tensor3d(inputBuffer, [1, seqLen, featureCount])));
-  const probabilities = await output.data();
+  const numCandidates = candidateRows.length;
+  const batchBuffer = new Float32Array(numCandidates * seqLen * featureCount);
+  candidateRows.forEach((rows, c) => {
+    const norm = normalizeFrame(rows);
+    for (let t = 0; t < seqLen; t++) {
+      batchBuffer.set(norm, (c * seqLen + t) * featureCount);
+    }
+  });
+
+  const output = tf.tidy(() => model.predict(tf.tensor3d(batchBuffer, [numCandidates, seqLen, featureCount])));
+  const allProbs = await output.data();
   output.dispose();
 
   state.modelMs = ema(state.modelMs, performance.now() - started);
   classifying = false;
   if (token !== presenceToken) return;
 
-  const index = argmax(probabilities);
-  const smoothed = smoother.push(index, probabilities[index]);
+  const numClasses = meta.class_names.length;
+  let bestIndex = 0;
+  let bestConf = -1;
+
+  for (let c = 0; c < numCandidates; c++) {
+    const candidateProbs = allProbs.subarray(c * numClasses, (c + 1) * numClasses);
+    const topIdx = argmax(candidateProbs);
+    const topConf = candidateProbs[topIdx];
+    if (topConf > bestConf) {
+      bestConf = topConf;
+      bestIndex = topIdx;
+    }
+  }
+
+  const smoothed = smoother.push(bestIndex, bestConf);
   updateLive(meta.class_names[smoothed.index], smoothed.confidence, smoothed.confidence > meta.confidence_threshold, performance.now());
 }
 

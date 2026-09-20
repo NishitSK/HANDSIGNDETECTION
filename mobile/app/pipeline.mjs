@@ -21,16 +21,38 @@ const zeroRows = (count) => Array.from({ length: count }, () => [0, 0, 0]);
 // Returns rows of [x, y, z]: left hand, right hand, then optionally 20 face points.
 // null when no hand is visible, matching extract_from_image().
 export function assembleLandmarks(handResult, faceResult, includeFace) {
+  const candidates = assembleLandmarkCandidates(handResult, faceResult, includeFace);
+  return candidates ? candidates[0] : null;
+}
+
+// When only 1 hand is visible, single-handed ISL signs (e.g. C, I, L, O, U, V)
+// were trained with the hand in the RIGHT slot (100% of samples). Other signs
+// had samples in the LEFT slot. Returning candidates for both slots allows
+// evaluating both in a single parallel batch so single-handed signs always match.
+export function assembleLandmarkCandidates(handResult, faceResult, includeFace) {
+  const hands = handResult?.landmarks ?? [];
+  if (!hands.length) return null;
+
+  const faceRows = [];
+  if (includeFace) {
+    const face = faceResult?.faceLandmarks?.[0];
+    if (face) {
+      for (const idx of FACE_KEY_INDICES) faceRows.push([face[idx].x, face[idx].y, face[idx].z]);
+    } else {
+      faceRows.push(...zeroRows(FACE_KEY_INDICES.length));
+    }
+  }
+
+  if (hands.length === 1) {
+    const single = hands[0].map((p) => [p.x, p.y, p.z]);
+    const rightSlotCandidate = [...zeroRows(HAND_POINTS), ...single, ...faceRows];
+    const leftSlotCandidate = [...single, ...zeroRows(HAND_POINTS), ...faceRows];
+    return [rightSlotCandidate, leftSlotCandidate];
+  }
+
   let left = null;
   let right = null;
-  const hands = handResult?.landmarks ?? [];
-  // Older tasks-vision releases name this field `handednesses`.
   const handedness = handResult?.handedness ?? handResult?.handednesses ?? [];
-
-  // MediaPipe Web labels handedness the opposite way to the legacy Python
-  // `solutions.hands` API that produced the training landmarks: on held-out photos
-  // 48 of 52 hands landed in the other slot (tests/mediapipe_parity.html). Map the
-  // web labels back to the training convention.
   const trainingLabel = { Left: 'Right', Right: 'Left' };
   hands.forEach((points, i) => {
     const rows = points.map((p) => [p.x, p.y, p.z]);
@@ -38,18 +60,12 @@ export function assembleLandmarks(handResult, faceResult, includeFace) {
     else right = rows;
   });
 
-  if (!left && !right) return null;
-
-  const rows = [...(left ?? zeroRows(HAND_POINTS)), ...(right ?? zeroRows(HAND_POINTS))];
-  if (includeFace) {
-    const face = faceResult?.faceLandmarks?.[0];
-    if (face) {
-      for (const idx of FACE_KEY_INDICES) rows.push([face[idx].x, face[idx].y, face[idx].z]);
-    } else {
-      rows.push(...zeroRows(FACE_KEY_INDICES.length));
-    }
-  }
-  return rows;
+  const twoHandedRows = [
+    ...(left ?? zeroRows(HAND_POINTS)),
+    ...(right ?? zeroRows(HAND_POINTS)),
+    ...faceRows,
+  ];
+  return [twoHandedRows];
 }
 
 export function normalizeFrame(rows) {
