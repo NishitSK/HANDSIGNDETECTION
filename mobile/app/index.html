@@ -23,6 +23,7 @@
     <header class="topbar">
       <h1 class="wordmark" id="wordmark">ISL <span>Fingerspell</span></h1>
       <div class="topbar-actions">
+        <button class="pill" id="tutorButton" type="button" aria-haspopup="dialog">🎓 Learn</button>
         <button class="pill" id="pamphletButton" type="button" aria-haspopup="dialog">Letters</button>
         <button class="pill" id="settingsButton" type="button" aria-haspopup="dialog">Settings</button>
       </div>
@@ -31,6 +32,12 @@
     <main class="stage" id="stage" data-facing="user">
       <video id="video" playsinline muted autoplay></video>
       <canvas id="overlay" aria-hidden="true"></canvas>
+
+      <!-- Transparent Ghost Guide on Camera for Learning -->
+      <div class="ghost-guide" id="ghostGuide" hidden>
+        <img id="ghostGuideImg" alt="Sign guide" src="pamphlet/isl/A.jpg">
+        <span class="ghost-guide-label" id="ghostGuideLabel">Guide: A</span>
+      </div>
 
       <div class="glyph" id="glyph" data-state="idle" style="--fill: 0; --hold: 0; --threshold: 0.6">
         <div class="glyph-box">
@@ -110,6 +117,46 @@
       <p class="pamphlet-hint">How to sign each letter in <span id="pamphletSystem">ISL</span>.</p>
       <div class="pamphlet-grid" id="pamphletGrid"></div>
       <button class="btn btn-primary" value="close">Done</button>
+    </form>
+  </dialog>
+
+  <!-- Sign Language Tutor & Ghost Overlay Dialog -->
+  <dialog class="sheet sheet-tutor" id="tutorDialog" aria-labelledby="tutorTitle">
+    <form method="dialog">
+      <h2 id="tutorTitle">🎓 Sign Language Tutor</h2>
+      <p class="tutor-subtitle">Practice handshapes with a live ghost overlay on your camera</p>
+
+      <div class="tutor-card">
+        <div class="tutor-preview-container">
+          <img id="tutorPreviewImg" src="pamphlet/isl/A.jpg" alt="Target Sign Preview">
+          <div class="tutor-nav-row">
+            <button class="btn btn-sm" id="tutorPrevBtn" type="button">◀</button>
+            <select id="tutorSelect" class="tutor-dropdown"></select>
+            <button class="btn btn-sm" id="tutorNextBtn" type="button">▶</button>
+          </div>
+        </div>
+        <div class="tutor-details">
+          <h3 id="tutorTargetTitle">Target: Letter A</h3>
+          <p id="tutorHintText" class="tutor-hint">Point dominant index finger to touch non-dominant thumb tip.</p>
+        </div>
+      </div>
+
+      <label class="toggle">
+        <input type="checkbox" id="tutorGuideToggle" checked>
+        <span>👻 Show Transparent Guide on Camera Feed</span>
+      </label>
+
+      <div class="tutor-slider-row">
+        <label for="tutorOpacitySlider">Guide Opacity: <span id="tutorOpacityVal">50%</span></label>
+        <input type="range" id="tutorOpacitySlider" min="15" max="90" value="50">
+      </div>
+
+      <div class="tutor-status-badge" id="tutorStatusBadge">
+        <span id="tutorStatusIcon">✋</span>
+        <span id="tutorStatusText">Align hands with guide to practice</span>
+      </div>
+
+      <button class="btn btn-primary" value="close">Start Practice</button>
     </form>
   </dialog>
 </body>

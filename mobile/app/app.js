@@ -62,6 +62,23 @@ const els = {
   pamphlet: $('pamphlet'),
   pamphletSystem: $('pamphletSystem'),
   pamphletGrid: $('pamphletGrid'),
+  tutorButton: $('tutorButton'),
+  tutorDialog: $('tutorDialog'),
+  ghostGuide: $('ghostGuide'),
+  ghostGuideImg: $('ghostGuideImg'),
+  ghostGuideLabel: $('ghostGuideLabel'),
+  tutorPreviewImg: $('tutorPreviewImg'),
+  tutorPrevBtn: $('tutorPrevBtn'),
+  tutorNextBtn: $('tutorNextBtn'),
+  tutorSelect: $('tutorSelect'),
+  tutorTargetTitle: $('tutorTargetTitle'),
+  tutorHintText: $('tutorHintText'),
+  tutorGuideToggle: $('tutorGuideToggle'),
+  tutorOpacitySlider: $('tutorOpacitySlider'),
+  tutorOpacityVal: $('tutorOpacityVal'),
+  tutorStatusBadge: $('tutorStatusBadge'),
+  tutorStatusText: $('tutorStatusText'),
+  tutorStatusIcon: $('tutorStatusIcon'),
 };
 const overlayContext = els.overlay.getContext('2d');
 
@@ -395,6 +412,7 @@ function drawHands(result) {
 function updateLive(letter, confidence, ready, now) {
   state.live = letter ? { letter, confidence, ready } : null;
   renderGlyph(updateHold(letter, ready, now));
+  updateTutorMatch(letter, confidence);
 }
 
 function updateHold(letter, ready, now) {
@@ -562,12 +580,93 @@ function renderReadout() {
 // as equivalent to the other 24 static letters.
 const MOTION_LETTERS = new Set(['J', 'Z']);
 
+const ISL_TUTOR_HINTS = {
+  'A': 'Point dominant index finger to touch non-dominant thumb tip.',
+  'B': 'Touch tips of both thumbs and index fingers together to form two loops.',
+  'C': 'Curve dominant hand into a open "C" shape facing inward/side.',
+  'D': 'Dominant index upright while thumb and fingers form a loop.',
+  'E': 'Touch dominant index finger to tip of non-dominant index finger.',
+  'F': 'Cross index fingers of both hands to form an "F" shape.',
+  'G': 'Place both closed fists vertically one on top of the other.',
+  'H': 'Lay dominant palm flat across the non-dominant open horizontal palm.',
+  'I': 'Touch dominant index finger to tip of non-dominant middle finger.',
+  'J': 'Touch middle finger tip and trace dominant hand downward.',
+  'K': 'Form a "V" with dominant index/middle fingers touching non-dominant index.',
+  'L': 'Open dominant hand into an "L" shape with thumb and index at 90 degrees.',
+  'M': 'Place 3 dominant fingertips (index, middle, ring) on non-dominant palm.',
+  'N': 'Place 2 dominant fingertips (index, middle) on non-dominant palm.',
+  'O': 'Touch dominant index finger to tip of non-dominant ring finger.',
+  'P': 'Dominant thumb and index form a circle touching non-dominant index.',
+  'Q': 'Hook dominant index finger onto the thumb of the non-dominant hand.',
+  'R': 'Hook dominant curved index finger over non-dominant flat palm.',
+  'S': 'Hook pinky fingers of both hands together tightly.',
+  'T': 'Touch dominant index finger to edge of non-dominant palm below pinky.',
+  'U': 'Touch dominant index finger to tip of non-dominant pinky finger.',
+  'V': 'Form a clear "V" with dominant index and middle fingers on open base palm.',
+  'W': 'Interlock fingers of both hands pointing diagonally upwards.',
+  'X': 'Cross both extended index fingers over each other to form an "X".',
+  'Y': 'Extend dominant thumb and pinky while tucking middle three fingers.',
+  'Z': 'Hold dominant open flat palm vertically facing non-dominant horizontal palm.'
+};
+
+let tutorLetter = 'A';
+
+function initTutor() {
+  if (!els.tutorSelect) return;
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  els.tutorSelect.replaceChildren(
+    ...letters.map((ltr) => {
+      const opt = document.createElement('option');
+      opt.value = ltr;
+      opt.textContent = `Letter ${ltr}`;
+      return opt;
+    }),
+  );
+  updateTutorLetter('A');
+}
+
+function updateTutorLetter(letter) {
+  tutorLetter = letter;
+  if (els.tutorSelect) els.tutorSelect.value = letter;
+  if (els.tutorTargetTitle) els.tutorTargetTitle.textContent = `Target: Letter ${letter}`;
+  if (els.tutorPreviewImg) els.tutorPreviewImg.src = `pamphlet/${mode}/${letter}.jpg`;
+  if (els.tutorHintText) els.tutorHintText.textContent = ISL_TUTOR_HINTS[letter] || `Sign the letter ${letter}.`;
+  if (els.ghostGuideImg) els.ghostGuideImg.src = `pamphlet/${mode}/${letter}.jpg`;
+  if (els.ghostGuideLabel) {
+    els.ghostGuideLabel.classList.remove('matched');
+    els.ghostGuideLabel.textContent = `Guide: ${letter}`;
+  }
+}
+
+function updateTutorMatch(letter, confidence) {
+  if (!els.ghostGuide || els.ghostGuide.hidden) return;
+  const isMatch = letter === tutorLetter && confidence >= 0.7;
+  if (isMatch) {
+    els.ghostGuideLabel.classList.add('matched');
+    els.ghostGuideLabel.textContent = `🎯 ${tutorLetter} (${Math.round(confidence * 100)}%)`;
+    if (els.tutorStatusBadge) {
+      els.tutorStatusBadge.classList.add('matched');
+      els.tutorStatusIcon.textContent = '🎯';
+      els.tutorStatusText.textContent = `EXCELLENT! Matched '${tutorLetter}' (${Math.round(confidence * 100)}%)`;
+    }
+  } else {
+    els.ghostGuideLabel.classList.remove('matched');
+    els.ghostGuideLabel.textContent = `Guide: ${tutorLetter}`;
+    if (els.tutorStatusBadge) {
+      els.tutorStatusBadge.classList.remove('matched');
+      els.tutorStatusIcon.textContent = '✋';
+      els.tutorStatusText.textContent = letter ? `Target: ${tutorLetter} | Detected: ${letter}` : 'Align hands with guide to practice';
+    }
+  }
+}
+
 function renderPamphlet() {
   els.pamphletSystem.textContent = MODE_LABELS[mode];
   els.pamphletGrid.replaceChildren(
     ...meta.class_names.map((letter) => {
       const card = document.createElement('div');
       card.className = 'pamphlet-card';
+      card.title = `Tap to practice letter ${letter}`;
       const img = document.createElement('img');
       img.src = `pamphlet/${mode}/${letter}.jpg`;
       img.alt = MOTION_LETTERS.has(letter)
@@ -583,6 +682,12 @@ function renderPamphlet() {
         note.textContent = 'motion sign — still frame';
         card.append(note);
       }
+      card.addEventListener('click', () => {
+        els.pamphlet.close();
+        updateTutorLetter(letter);
+        els.ghostGuide.hidden = !els.tutorGuideToggle.checked;
+        els.tutorDialog.showModal();
+      });
       return card;
     }),
   );
@@ -665,6 +770,39 @@ function wireControls() {
     els.pamphlet.showModal();
   });
 
+  els.tutorButton?.addEventListener('click', () => {
+    els.ghostGuide.hidden = !els.tutorGuideToggle.checked;
+    els.tutorDialog.showModal();
+  });
+
+  els.tutorPrevBtn?.addEventListener('click', () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const idx = letters.indexOf(tutorLetter);
+    const nextIdx = (idx - 1 + letters.length) % letters.length;
+    updateTutorLetter(letters[nextIdx]);
+  });
+
+  els.tutorNextBtn?.addEventListener('click', () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const idx = letters.indexOf(tutorLetter);
+    const nextIdx = (idx + 1) % letters.length;
+    updateTutorLetter(letters[nextIdx]);
+  });
+
+  els.tutorSelect?.addEventListener('change', (e) => {
+    updateTutorLetter(e.target.value);
+  });
+
+  els.tutorGuideToggle?.addEventListener('change', () => {
+    els.ghostGuide.hidden = !els.tutorGuideToggle.checked;
+  });
+
+  els.tutorOpacitySlider?.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (els.tutorOpacityVal) els.tutorOpacityVal.textContent = `${val}%`;
+    if (els.ghostGuideImg) els.ghostGuideImg.style.opacity = (val / 100).toString();
+  });
+
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && stream) keepScreenAwake();
   });
@@ -696,6 +834,7 @@ async function start() {
     await withStage('model', loadClassifier(mode));
     renderTape();
     renderPamphlet();
+    initTutor();
 
     showStatus('Loading hand tracking… The first visit downloads about 20 MB.');
     await withStage('trackers', loadTrackers());
