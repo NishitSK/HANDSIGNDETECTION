@@ -92,39 +92,60 @@ def render_skeleton_image(points_left, points_right, out_path, size=512):
 
     img.save(out_path, "PNG")
 
-def main():
-    print(f"Loading landmarks from {DATA_PATH}...")
-    with open(DATA_PATH, "rb") as f:
+def generate_for_system(data_path, out_dir, system_name, expected_letters):
+    print(f"\nGenerating skeleton images for {system_name} ({len(expected_letters)} letters)...")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with open(data_path, "rb") as f:
         data = pickle.load(f)
 
     X = data["landmarks"]
     y = data["labels"]
+    class_names = data.get("class_names", [chr(65 + i) for i in range(len(set(y)))])
 
-    print("Generating skeleton images for ISL A-Z...")
-    for letter_idx in range(26):
-        letter_char = chr(65 + letter_idx)
-        indices = [i for i, l in enumerate(y) if l == letter_idx]
+    for letter_idx, letter_char in enumerate(expected_letters):
+        # Match by class_names index if present, else letter_idx
+        if letter_char in class_names:
+            cls_idx = class_names.index(letter_char)
+        else:
+            cls_idx = letter_idx
+
+        indices = [i for i, l in enumerate(y) if l == cls_idx]
         if not indices:
-            print(f"Warning: No samples for letter {letter_char}")
+            print(f"  Warning: No samples for letter {letter_char}")
             continue
 
         # Choose the median/central sample across the class to ensure good representation
         samples = [np.array(X[i]).reshape(-1, 3) for i in indices[:150]]
-        # Compute mean coordinates for non-zero points
-        # To pick a clean real sample: find the one closest to the class mean
         flat_samples = np.array([s.flatten() for s in samples])
         mean_sample = flat_samples.mean(axis=0)
         dists = np.linalg.norm(flat_samples - mean_sample, axis=1)
         best_sample = samples[np.argmin(dists)]
 
         left_pts = best_sample[:21]
-        right_pts = best_sample[21:42]
+        right_pts = best_sample[21:42] if len(best_sample) >= 42 else None
 
-        out_file = OUT_DIR / f"{letter_char}.png"
+        # For ASL or single-hand samples where right hand had the data instead of left:
+        if left_pts is not None and np.all(left_pts == 0) and right_pts is not None and not np.all(right_pts == 0):
+            left_pts, right_pts = right_pts, None
+
+        out_file = out_dir / f"{letter_char}.png"
         render_skeleton_image(left_pts, right_pts, out_file)
         print(f"  Saved {out_file.name} (from {len(indices)} samples)")
 
-    print(f"All 26 skeleton guides generated in {OUT_DIR}")
+    print(f"Finished {system_name} skeleton guides in {out_dir}")
+
+def main():
+    isl_data = ROOT / "data" / "landmarks" / "landmarks_letter_hands_only_mlp.pkl"
+    isl_out = ROOT / "mobile" / "app" / "pamphlet" / "isl-skeleton"
+    asl_data = ROOT / "data" / "landmarks" / "landmarks_asl_hands_only_mlp.pkl"
+    asl_out = ROOT / "mobile" / "app" / "pamphlet" / "asl-skeleton"
+
+    if isl_data.exists():
+        generate_for_system(isl_data, isl_out, "ISL", [chr(65 + i) for i in range(26)])
+    if asl_data.exists():
+        asl_letters = [c for c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if c not in ('J', 'Z')]
+        generate_for_system(asl_data, asl_out, "ASL", asl_letters)
 
 if __name__ == "__main__":
     main()
+

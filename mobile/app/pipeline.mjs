@@ -20,16 +20,22 @@ const zeroRows = (count) => Array.from({ length: count }, () => [0, 0, 0]);
 
 // Returns rows of [x, y, z]: left hand, right hand, then optionally 20 face points.
 // null when no hand is visible, matching extract_from_image().
-export function assembleLandmarks(handResult, faceResult, includeFace) {
-  const candidates = assembleLandmarkCandidates(handResult, faceResult, includeFace);
+export function assembleLandmarks(handResult, faceResult, includeFace, mode = 'isl') {
+  const candidates = assembleLandmarkCandidates(handResult, faceResult, includeFace, mode);
   return candidates ? candidates[0] : null;
 }
 
-// When only 1 hand is visible, single-handed ISL signs (e.g. C, I, L, O, U, V)
-// were trained with the hand in the RIGHT slot (100% of samples). Other signs
-// had samples in the LEFT slot. Returning candidates for both slots allows
-// evaluating both in a single parallel batch so single-handed signs always match.
-export function assembleLandmarkCandidates(handResult, faceResult, includeFace) {
+// When only 1 hand is visible:
+// - In ASL (single-handed 24-letter alphabet A-Y), the model was trained with the hand
+//   in the LEFT slot (rows 0..20) and zeros in the right slot. Normalization is anchored
+//   to row 0 (the wrist). Placing zeros in the left slot breaks normalization (size=0,
+//   scale=1.0) and creates spurious out-of-distribution logits that corrupt detection.
+//   Therefore, in ASL mode, we strictly assemble single hands into the LEFT slot.
+//   If multiple hands are visible, each is evaluated as a single hand candidate in the left slot.
+// - In ISL, single-handed signs (e.g. C, I, L, O, U, V) were trained in the RIGHT slot,
+//   while two-handed signs use both slots. Returning candidates for both slots allows
+//   evaluating both in a single parallel batch so single-handed signs always match.
+export function assembleLandmarkCandidates(handResult, faceResult, includeFace, mode = 'isl') {
   const hands = handResult?.landmarks ?? [];
   if (!hands.length) return null;
 
@@ -43,6 +49,15 @@ export function assembleLandmarkCandidates(handResult, faceResult, includeFace) 
     }
   }
 
+  if (mode === 'asl') {
+    if (hands.length === 1) {
+      const single = hands[0].map((p) => [p.x, p.y, p.z]);
+      return [[...single, ...zeroRows(HAND_POINTS), ...faceRows]];
+    }
+    return hands.map((h) => [...h.map((p) => [p.x, p.y, p.z]), ...zeroRows(HAND_POINTS), ...faceRows]);
+  }
+
+  // ISL mode:
   if (hands.length === 1) {
     const single = hands[0].map((p) => [p.x, p.y, p.z]);
     const rightSlotCandidate = [...zeroRows(HAND_POINTS), ...single, ...faceRows];

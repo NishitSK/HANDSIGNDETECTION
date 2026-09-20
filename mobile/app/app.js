@@ -314,7 +314,7 @@ function tick() {
   drawHands(hands);
   adaptQuality(now);
 
-  const candidateRows = assembleLandmarkCandidates(hands, lastFace, includeFace);
+  const candidateRows = assembleLandmarkCandidates(hands, lastFace, includeFace, mode);
   // ISL signs include both two-handed signs (e.g. A, B, D) and single-handed
   // signs (e.g. C, I, L, O, U, V). Require at least 1 visible hand to run classification.
   const seenHands = hands.landmarks?.length ?? 0;
@@ -637,8 +637,8 @@ try {
 }
 
 function getGuideImagePath(letter, style = guideStyle) {
-  if (style === 'skeleton' && mode === 'isl') {
-    return `pamphlet/isl-skeleton/${letter}.png`;
+  if (style === 'skeleton') {
+    return `pamphlet/${mode}-skeleton/${letter}.png`;
   }
   return `pamphlet/${mode}/${letter}.jpg`;
 }
@@ -662,7 +662,7 @@ let tutorLetter = 'A';
 
 function initTutor() {
   if (!els.tutorSelect) return;
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const letters = meta?.class_names ?? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   els.tutorSelect.replaceChildren(
     ...letters.map((ltr) => {
       const opt = document.createElement('option');
@@ -672,7 +672,7 @@ function initTutor() {
     }),
   );
   setGuideStyle(guideStyle);
-  updateTutorLetter('A');
+  updateTutorLetter(letters[0] ?? 'A');
 }
 
 let tutorMatchedSince = null;
@@ -804,6 +804,20 @@ async function applyMode(nextMode) {
 
     els.wordmark.firstChild.textContent = `${MODE_LABELS[mode]} `;
     renderPamphlet();
+    if (els.tutorSelect && meta?.class_names) {
+      els.tutorSelect.replaceChildren(
+        ...meta.class_names.map((ltr) => {
+          const opt = document.createElement('option');
+          opt.value = ltr;
+          opt.textContent = `Letter ${ltr}`;
+          return opt;
+        }),
+      );
+      if (!meta.class_names.includes(tutorLetter)) {
+        tutorLetter = meta.class_names[0] ?? 'A';
+      }
+      updateTutorLetter(tutorLetter);
+    }
     els.status.hidden = true;
   } catch (error) {
     mode = previous;
