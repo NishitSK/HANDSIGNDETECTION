@@ -66,13 +66,37 @@ export function assembleLandmarkCandidates(handResult, faceResult, includeFace, 
     const mcp = single[9] ?? single[12];
     const curPalm = Math.hypot(mcp.x - wrist.x, mcp.y - wrist.y, (mcp.z || 0) - (wrist.z || 0));
     const scale = curPalm > 1e-4 ? (0.423 / curPalm) : 1;
-    const alignedSingle = single.map((p) => [
+
+    // Candidate 1: natural orientation aligned to canonical position and palm scale
+    const alignedNatural = single.map((p) => [
       (p.x - wrist.x) * scale + 0.76442,
       (p.y - wrist.y) * scale + 0.78281,
       ((p.z || 0) - (wrist.z || 0)) * scale,
     ]);
-    const rightSlotCandidate = [...zeroRows(HAND_POINTS), ...alignedSingle, ...faceRows];
-    return [rightSlotCandidate];
+
+    // Candidate 2: rotation-corrected to canonical upright inward angle (~105 deg)
+    // Prevents tilted V signs from drifting into W
+    const TARGET_ANGLE = (105.0 * Math.PI) / 180.0;
+    const curAngle = Math.atan2(-(mcp.y - wrist.y), mcp.x - wrist.x);
+    const dTheta = TARGET_ANGLE - curAngle;
+    const cosT = Math.cos(dTheta);
+    const sinT = Math.sin(dTheta);
+
+    const alignedRotated = single.map((p) => {
+      const dx = p.x - wrist.x;
+      const dy = p.y - wrist.y;
+      const rx = (dx * cosT + dy * sinT) * scale;
+      const ry = (-dx * sinT + dy * cosT) * scale;
+      return [
+        rx + 0.76442,
+        ry + 0.78281,
+        ((p.z || 0) - (wrist.z || 0)) * scale,
+      ];
+    });
+
+    const candNatural = [...zeroRows(HAND_POINTS), ...alignedNatural, ...faceRows];
+    const candRotated = [...zeroRows(HAND_POINTS), ...alignedRotated, ...faceRows];
+    return [candNatural, candRotated];
   }
 
   let left = null;
