@@ -59,10 +59,18 @@ export function assembleLandmarkCandidates(handResult, faceResult, includeFace, 
 
   // ISL mode:
   if (hands.length === 1) {
-    const single = hands[0].map((p) => [p.x, p.y, p.z]);
-    const rightSlotCandidate = [...zeroRows(HAND_POINTS), ...single, ...faceRows];
-    const leftSlotCandidate = [...single, ...zeroRows(HAND_POINTS), ...faceRows];
-    return [rightSlotCandidate, leftSlotCandidate];
+    const single = hands[0];
+    const wrist = single[0];
+    const tip = single[12];
+    const curSize = Math.hypot(tip.x - wrist.x, tip.y - wrist.y, (tip.z || 0) - (wrist.z || 0));
+    const scale = curSize > 1e-4 ? (0.52268 / curSize) : 1;
+    const alignedSingle = single.map((p) => [
+      (p.x - wrist.x) * scale + 0.76442,
+      (p.y - wrist.y) * scale + 0.78281,
+      ((p.z || 0) - (wrist.z || 0)) * scale,
+    ]);
+    const rightSlotCandidate = [...zeroRows(HAND_POINTS), ...alignedSingle, ...faceRows];
+    return [rightSlotCandidate];
   }
 
   let left = null;

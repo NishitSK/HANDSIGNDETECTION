@@ -114,8 +114,12 @@ def generate_for_system(data_path, out_dir, system_name, expected_letters):
             print(f"  Warning: No samples for letter {letter_char}")
             continue
 
-        # Choose the median/central sample across the class to ensure good representation
-        samples = [np.array(X[i]).reshape(-1, 3) for i in indices[:150]]
+        # For signs with two hands, prioritize samples that contain both hands detected
+        both_indices = [i for i in indices if np.count_nonzero(X[i][:21]) > 0 and len(X[i]) >= 42 and np.count_nonzero(X[i][21:42]) > 0]
+        pool = both_indices if len(both_indices) >= 5 else indices
+
+        # Choose the median/central sample across the pool to ensure good representation
+        samples = [np.array(X[i]).reshape(-1, 3) for i in pool[:150]]
         flat_samples = np.array([s.flatten() for s in samples])
         mean_sample = flat_samples.mean(axis=0)
         dists = np.linalg.norm(flat_samples - mean_sample, axis=1)

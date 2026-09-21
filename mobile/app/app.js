@@ -94,6 +94,8 @@ const state = {
   releasedSince: null,
   fps: 0,
   modelMs: 0,
+  cameraSettings: null,
+  lastCandidates: [],
 };
 
 let model;
@@ -259,11 +261,22 @@ async function startCamera(facing) {
     // rather than tracking capped below what we're trying to hit.
     video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: TARGET_FPS } },
   });
+  const videoTrack = stream.getVideoTracks()[0];
+  const settings = videoTrack?.getSettings ? videoTrack.getSettings() : {};
+  state.cameraSettings = {
+    width: settings.width || 0,
+    height: settings.height || 0,
+    facingMode: settings.facingMode || facing,
+  };
   els.video.srcObject = stream;
   await els.video.play();
   els.stage.dataset.facing = facing;
   els.overlay.width = els.video.videoWidth;
   els.overlay.height = els.video.videoHeight;
+  if (!state.cameraSettings.width) {
+    state.cameraSettings.width = els.video.videoWidth;
+    state.cameraSettings.height = els.video.videoHeight;
+  }
   lastVideoTime = -1;
 }
 
@@ -376,16 +389,22 @@ async function classify(candidateRows) {
   const numClasses = meta.class_names.length;
   let bestIndex = 0;
   let bestConf = -1;
+  const candidateScores = [];
 
   for (let c = 0; c < numCandidates; c++) {
     const candidateProbs = allProbs.subarray(c * numClasses, (c + 1) * numClasses);
     const topIdx = argmax(candidateProbs);
     const topConf = candidateProbs[topIdx];
+    candidateScores.push({
+      label: meta.class_names[topIdx],
+      confidence: topConf,
+    });
     if (topConf > bestConf) {
       bestConf = topConf;
       bestIndex = topIdx;
     }
   }
+  state.lastCandidates = candidateScores;
 
   const smoothed = smoother.push(bestIndex, bestConf);
   updateLive(meta.class_names[smoothed.index], smoothed.confidence, smoothed.confidence > meta.confidence_threshold, performance.now());
@@ -588,9 +607,18 @@ function describeError(error) {
 function renderReadout() {
   const inputs = includeFace ? 'hands + face' : 'hands only';
   const quality = QUALITY_STEPS[qualityIndex];
+  const isNative = window.Capacitor?.isNativePlatform?.() ? 'Capacitor APK' : 'Browser Web';
+  const cam = state.cameraSettings
+    ? `${state.cameraSettings.width}x${state.cameraSettings.height} (${state.cameraSettings.facingMode || 'cam'})`
+    : (els.video.videoWidth ? `${els.video.videoWidth}x${els.video.videoHeight}` : 'pending');
+  const cands = state.lastCandidates?.length
+    ? state.lastCandidates.map((c, i) => `#${i + 1}:${c.label}(${(c.confidence * 100).toFixed(0)}%)`).join(' ')
+    : 'none';
+
   els.readout.textContent =
-    `${state.fps.toFixed(0)} fps (target ${TARGET_FPS}) · model ${state.modelMs.toFixed(1)} ms · ` +
-    `face 1/${quality.face} · classify 1/${quality.classify} · ${inputs} (${featureCount} inputs) · ${tf.getBackend()}`;
+    `[${isNative}] ${state.fps.toFixed(0)} fps (target ${TARGET_FPS}) · model ${state.modelMs.toFixed(1)} ms · ${tf.getBackend()}\n` +
+    `Cam: ${cam} · Q: 1/${quality.classify} · ${inputs} (${featureCount} inputs)\n` +
+    `Candidates: [${cands}]`;
 }
 
 // J and Z are motion signs in real ISL/ASL (a drawn hook, a traced Z) — the
