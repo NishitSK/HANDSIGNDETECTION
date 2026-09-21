@@ -61,9 +61,11 @@ export function assembleLandmarkCandidates(handResult, faceResult, includeFace, 
   if (hands.length === 1) {
     const single = hands[0];
     const wrist = single[0];
-    const tip = single[12];
-    const curSize = Math.hypot(tip.x - wrist.x, tip.y - wrist.y, (tip.z || 0) - (wrist.z || 0));
-    const scale = curSize > 1e-4 ? (0.52268 / curSize) : 1;
+    // Scale by palm length (wrist to middle knuckle MCP, landmark 9) rather than
+    // finger tip (landmark 12) so gestures with extended fingers (like V) aren't shrunk.
+    const mcp = single[9] ?? single[12];
+    const curPalm = Math.hypot(mcp.x - wrist.x, mcp.y - wrist.y, (mcp.z || 0) - (wrist.z || 0));
+    const scale = curPalm > 1e-4 ? (0.423 / curPalm) : 1;
     const alignedSingle = single.map((p) => [
       (p.x - wrist.x) * scale + 0.76442,
       (p.y - wrist.y) * scale + 0.78281,
