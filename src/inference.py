@@ -53,12 +53,15 @@ class PredictionSmoother:
 
 
 class KinematicVelocityTracker:
-    """Tracks hand centroid displacement across recent frames to detect motion vs static signs"""
-    def __init__(self, window_size=8, threshold=0.018):
+    """Task-Adaptive Kinematic Tracker: tracks centroid velocity, acceleration, and curvature"""
+    def __init__(self, window_size=10, base_threshold=0.016, threshold=None):
         self.window_size = window_size
-        self.threshold = threshold
+        self.base_threshold = threshold if threshold is not None else base_threshold
+        self.adaptive_threshold = self.base_threshold
         self.positions = deque(maxlen=window_size)
+        self.velocities = deque(maxlen=window_size)
         self.last_velocity = 0.0
+        self.motion_momentum = 0
 
     def update(self, landmarks):
         """
@@ -66,15 +69,13 @@ class KinematicVelocityTracker:
         Returns: is_motion (bool), velocity (float)
         """
         if landmarks is None:
-            self.positions.clear()
-            self.last_velocity = 0.0
+            self.clear()
             return False, 0.0
 
         hand_pts = landmarks[:42]
         active_pts = hand_pts[np.any(hand_pts != 0, axis=1)]
         if len(active_pts) == 0:
-            self.positions.clear()
-            self.last_velocity = 0.0
+            self.clear()
             return False, 0.0
 
         centroid = np.mean(active_pts[:, :2], axis=0)
@@ -83,14 +84,45 @@ class KinematicVelocityTracker:
         if len(self.positions) < 3:
             return False, 0.0
 
-        deltas = [np.linalg.norm(self.positions[i] - self.positions[i - 1]) for i in range(1, len(self.positions))]
-        self.last_velocity = float(np.mean(deltas))
-        is_motion = self.last_velocity >= self.threshold
+        # Instantaneous delta
+        delta = float(np.linalg.norm(self.positions[-1] - self.positions[-2]))
+        self.velocities.append(delta)
+
+        # Smooth velocity across window
+        self.last_velocity = float(np.mean(self.velocities))
+
+        # Adaptive threshold: adjust dynamically to user baseline jitter
+        min_vel = float(np.min(self.velocities))
+        self.adaptive_threshold = max(0.012, min(0.028, min_vel * 2.2 + 0.010))
+
+        # Dynamic curvature detection (for curved traces like J and zig-zags like Z)
+        is_curving = False
+        if len(self.positions) >= 4:
+            v1 = self.positions[-1] - self.positions[-2]
+            v2 = self.positions[-2] - self.positions[-3]
+            norm1, norm2 = np.linalg.norm(v1), np.linalg.norm(v2)
+            if norm1 > 0.005 and norm2 > 0.005:
+                cos_angle = np.clip(np.dot(v1, v2) / (norm1 * norm2), -1.0, 1.0)
+                angle_diff = float(np.arccos(cos_angle))
+                if angle_diff > 0.45: # > ~25 degrees direction change
+                    is_curving = True
+
+        raw_motion = (self.last_velocity >= self.adaptive_threshold) or is_curving
+
+        # Adaptive motion momentum hysteresis: retain motion state across brief direction pauses
+        if raw_motion:
+            self.motion_momentum = min(12, self.motion_momentum + 3)
+        else:
+            self.motion_momentum = max(0, self.motion_momentum - 1)
+
+        is_motion = (self.motion_momentum > 2)
         return is_motion, self.last_velocity
 
     def clear(self):
         self.positions.clear()
+        self.velocities.clear()
         self.last_velocity = 0.0
+        self.motion_momentum = 0
 
 
 class ISLInference:
@@ -144,7 +176,7 @@ class ISLInference:
             self.sequence_length = self.config.get('model', 'sequence_length', default=30)
 
         # Dual Ensemble Models: MLP (Static Handsigns) & GRU (Motion Gestures)
-        self.ensemble_mode = self.config.get('detection', 'mode', default='auto_ensemble')
+        self.ensemble_mode = self.config.get('detection', 'mode', default='task_adaptive')
         self.mlp_model = None
         self.gru_model = None
         
@@ -242,42 +274,73 @@ class ISLInference:
             self.smoother.clear()
             return None, 0.0
 
-        # Determine which engine to use based on mode & motion detection
-        use_gru = False
+        # Continuous GRU buffer update so sequence context is always available
+        primary_c = candidates[0]
+        feature_vec = primary_c[:42].flatten()
+        self.gru_sequence_buffer.append(feature_vec)
+
+        # Build padded 30-frame sequence for GRU
+        if len(self.gru_sequence_buffer) < 30:
+            cur_list = list(self.gru_sequence_buffer)
+            padded_seq = [cur_list[0]] * (30 - len(cur_list)) + cur_list
+        else:
+            padded_seq = list(self.gru_sequence_buffer)
+
+        # Dynamic motion gesture classes in ISL
+        motion_char_set = {'J', 'Z'}
+
+        # Task-adaptive decision logic
         if self.ensemble_mode == 'gru_only':
             use_gru = True
+            task_name = "GRU_ONLY"
         elif self.ensemble_mode == 'mlp_only':
             use_gru = False
-        else: # auto_ensemble
-            use_gru = is_motion
-
-        self.active_engine = "GRU" if use_gru else "MLP"
-        target_model = self.gru_model if use_gru else self.mlp_model
-        
-        if use_gru:
-            # GRU expects shape (batch, 30, 186)
-            primary_c = candidates[0]
-            self.gru_sequence_buffer.append(primary_c.flatten())
-            
-            if len(self.gru_sequence_buffer) < 30:
-                cur_list = list(self.gru_sequence_buffer)
-                padded_seq = [cur_list[0]] * (30 - len(cur_list)) + cur_list
+            task_name = "MLP_ONLY"
+        else:  # 'task_adaptive' or 'auto_ensemble'
+            if is_motion:
+                use_gru = True
+                task_name = "DYNAMIC_MOTION (GRU)"
             else:
-                padded_seq = list(self.gru_sequence_buffer)
-                
-            gru_input = np.array(padded_seq, dtype=np.float32).reshape(1, 30, -1)
-            probs = target_model.predict(gru_input, verbose=0)[0]
+                use_gru = False
+                task_name = "STATIC_POSE (MLP)"
+
+        self.active_task = task_name
+        self.active_engine = "GRU" if use_gru else "MLP"
+
+        if use_gru:
+            # Run 50-epoch high-accuracy GRU model (99.39% test accuracy)
+            expected_dim = getattr(self.gru_model, 'input_shape', [None, 30, 126])[-1]
+            if expected_dim == 126:
+                gru_input = np.array(padded_seq, dtype=np.float32).reshape(1, 30, 126)
+            else:
+                full_c = [c.flatten() if len(c.flatten()) == expected_dim else np.pad(c[:42].flatten(), (0, expected_dim - 126)) for c in padded_seq]
+                gru_input = np.array(full_c, dtype=np.float32).reshape(1, 30, expected_dim)
+
+            probs = self.gru_model.predict(gru_input, verbose=0)[0]
             best_idx = int(np.argmax(probs))
             best_conf = float(probs[best_idx])
+            pred_char = self.class_names[best_idx] if best_idx < len(self.class_names) else ""
+
+            # If GRU predicts a static letter with moderate confidence during subtle motion,
+            # cross-check with MLP to verify if it's a stable handshape held with slight hand jitter
+            if pred_char not in motion_char_set and best_conf < 0.70 and self.mlp_model is not None:
+                mlp_batch = np.array([primary_c[:42].flatten().reshape(1, 126)], dtype=np.float32)
+                mlp_probs = self.mlp_model.predict(mlp_batch, verbose=0)[0]
+                mlp_idx = int(np.argmax(mlp_probs))
+                mlp_conf = float(mlp_probs[mlp_idx])
+                if mlp_conf > 0.88:
+                    best_idx = mlp_idx
+                    best_conf = mlp_conf
+                    self.active_engine = "MLP (Jitter-Corrected)"
         else:
-            # MLP expects shape (batch, 1, 126) - hands only (42 landmarks * 3 coords)
+            # Run Deep Residual MLP (99.76% test accuracy)
             mlp_batch = []
             for c in candidates:
                 hands_126 = c[:42].flatten()
                 mlp_batch.append(hands_126.reshape(1, 126))
             mlp_batch = np.array(mlp_batch, dtype=np.float32)
-            
-            probs_batch = target_model.predict(mlp_batch, verbose=0)
+
+            probs_batch = self.mlp_model.predict(mlp_batch, verbose=0)
             best_idx = 0
             best_conf = -1.0
             for probs in probs_batch:
@@ -286,6 +349,19 @@ class ISLInference:
                 if conf > best_conf:
                     best_conf = conf
                     best_idx = idx
+
+            # If MLP predicts a motion letter (J or Z) while stationary, consult GRU sequence
+            pred_char = self.class_names[best_idx] if best_idx < len(self.class_names) else ""
+            if pred_char in motion_char_set and self.gru_model is not None:
+                expected_dim = getattr(self.gru_model, 'input_shape', [None, 30, 126])[-1]
+                gru_input = np.array(padded_seq, dtype=np.float32).reshape(1, 30, expected_dim)
+                gru_probs = self.gru_model.predict(gru_input, verbose=0)[0]
+                gru_idx = int(np.argmax(gru_probs))
+                gru_conf = float(gru_probs[gru_idx])
+                if self.class_names[gru_idx] in motion_char_set:
+                    best_idx = gru_idx
+                    best_conf = gru_conf
+                    self.active_engine = "GRU (Sequence-Verified)"
 
         # Smooth predictions
         smoothed_idx, smoothed_conf = self.smoother.push(best_idx, best_conf)

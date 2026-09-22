@@ -1,4 +1,10 @@
 {
+  "model_type": "GRU",
+  "architecture": "Adaptive_Fast_GRU",
+  "sequence_length": 30,
+  "input_features": 126,
+  "epochs_trained": 40,
+  "test_accuracy": 0.9939338564872742,
   "class_names": [
     "A",
     "B",
@@ -27,21 +33,5 @@
     "Y",
     "Z"
   ],
-  "num_classes": 26,
-  "input_shape": [
-    30,
-    186
-  ],
-  "model_type": "GRU",
-  "training_config": {
-    "augmentation_probability": 0.9,
-    "batch_size": 16,
-    "data_augmentation": true,
-    "early_stopping_min_epochs": 10,
-    "early_stopping_patience": 40,
-    "early_stopping_target_accuracy": 0.75,
-    "epochs": 40,
-    "reduce_lr_patience": 10,
-    "validation_split": 0.2
-  }
+  "num_classes": 26
 }
