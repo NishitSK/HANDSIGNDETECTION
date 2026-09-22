@@ -54,9 +54,14 @@ class PredictionSmoother:
 
 class KinematicVelocityTracker:
     """Task-Adaptive Kinematic Tracker: tracks centroid velocity, acceleration, and curvature"""
-    def __init__(self, window_size=10, base_threshold=0.016, threshold=None):
+    def __init__(self, window_size=10, base_threshold=0.016, threshold=None, **kwargs):
         self.window_size = window_size
-        self.base_threshold = threshold if threshold is not None else base_threshold
+        if threshold is not None:
+            self.base_threshold = threshold
+        elif 'motion_threshold' in kwargs:
+            self.base_threshold = kwargs['motion_threshold']
+        else:
+            self.base_threshold = base_threshold
         self.adaptive_threshold = self.base_threshold
         self.positions = deque(maxlen=window_size)
         self.velocities = deque(maxlen=window_size)
