@@ -1093,12 +1093,58 @@ class ISLGUIApp(QMainWindow):
         # Load collected data stats on startup
         QTimer.singleShot(500, self.update_collected_stats)
         
+        # === SECTION 5.5: DUAL ENSEMBLE ENGINE ===
+        engine_group = QGroupBox("🤖 Recognition Engine")
+        engine_layout = QVBoxLayout()
+        engine_layout.setSpacing(6)
+        
+        mode_select_layout = QHBoxLayout()
+        mode_label = QLabel("Mode:")
+        mode_label.setFont(QFont('Arial', 9, QFont.Bold))
+        mode_select_layout.addWidget(mode_label)
+        
+        self.engine_mode_combo = QComboBox()
+        self.engine_mode_combo.addItems([
+            "⚡ Auto (MLP + GRU)",
+            "✋ MLP (Static Handsigns)",
+            "🌊 GRU (Motion Gestures)"
+        ])
+        current_mode = self.config.get('detection', 'mode', default='auto_ensemble')
+        if current_mode == 'mlp_only':
+            self.engine_mode_combo.setCurrentIndex(1)
+        elif current_mode == 'gru_only':
+            self.engine_mode_combo.setCurrentIndex(2)
+        else:
+            self.engine_mode_combo.setCurrentIndex(0)
+            
+        self.engine_mode_combo.currentIndexChanged.connect(self.on_engine_mode_changed)
+        self.engine_mode_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2a2a2a;
+                color: #00ffff;
+                border: 1px solid #00aaff;
+                border-radius: 4px;
+                padding: 4px;
+                font-weight: bold;
+            }
+        """)
+        mode_select_layout.addWidget(self.engine_mode_combo)
+        engine_layout.addLayout(mode_select_layout)
+        
+        self.engine_status_label = QLabel("Active: MLP (Static Signs)")
+        self.engine_status_label.setFont(QFont('Arial', 8))
+        self.engine_status_label.setStyleSheet("color: #00ff88; padding: 2px;")
+        engine_layout.addWidget(self.engine_status_label)
+        
+        engine_group.setLayout(engine_layout)
+        layout.addWidget(engine_group)
+        
         # === SECTION 6: ACTIVE FEATURES ===
         features_group = QGroupBox("⚡ Active Features")
         features_group.setMaximumHeight(120)
         features_layout = QVBoxLayout()
         
-        features_text = "✓ Real-time Hands Tracking\n✓ High-Speed Skeleton\n✓ Grammar AI\n✓ Real-time Voice TTS"
+        features_text = "✓ Dual Ensemble: MLP + GRU\n✓ Real-time Hands Tracking\n✓ Kinematic Velocity Routing\n✓ Real-time Voice TTS"
         features_label = QLabel(features_text)
         features_label.setFont(QFont('Arial', 8))
         features_label.setStyleSheet("color: #00ff00;")
@@ -1350,8 +1396,22 @@ class ISLGUIApp(QMainWindow):
                     "color: #ffaa00; padding: 6px; background: rgba(255, 170, 0, 0.15); border-radius: 6px;"
                 )
 
+        # Update engine status badge
+        if hasattr(self, 'engine_status_label'):
+            active = getattr(self.inference_engine, 'active_engine', 'MLP')
+            vel = getattr(self.inference_engine.velocity_tracker, 'last_velocity', 0.0)
+            self.engine_status_label.setText(f"Active: {active} {'(Motion)' if active == 'GRU' else '(Static)'} | v: {vel:.3f}")
+
         # Update stats
         self.update_statistics()
+    
+    def on_engine_mode_changed(self, index):
+        """Handle manual or auto switching between MLP static and GRU motion engines"""
+        modes = ['auto_ensemble', 'mlp_only', 'gru_only']
+        mode = modes[index]
+        self.inference_engine.ensemble_mode = mode
+        mode_names = ['Auto (MLP + GRU)', 'MLP (Static Signs)', 'GRU (Motion Signs)']
+        self.statusBar().showMessage(f"Recognition Engine set to: {mode_names[index]}", 3000)
     
     def translate_sequence(self):
         """Translate and speak current sequence"""

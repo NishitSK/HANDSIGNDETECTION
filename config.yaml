@@ -19,6 +19,8 @@ detection:
   gesture_hold_frames: 10
   min_detection_confidence: 0.5
   min_tracking_confidence: 0.5
+  mode: auto_ensemble
+  motion_velocity_threshold: 0.018
   smoothing_window: 5
 gui:
   show_confidence: true
@@ -30,9 +32,11 @@ model:
   d_model: 128
   dropout: 0.3
   ff_dim: 256
+  gru_model_path: results/GRU/final/isl_model.h5
   hidden_units: 256
   input_features: 186
   learning_rate: 0.001
+  mlp_model_path: results/ISL_MLP/isl_model.h5
   name: ISL_Letter_both_hands_face
   num_classes: 26
   num_heads: 4
@@ -40,7 +44,7 @@ model:
   num_transformer_blocks: 3
   sequence_length: 30
   target_seq_length: 1
-  type: TCN
+  type: DUAL_ENSEMBLE
 nlp:
   max_length: 100
   model_name: google/flan-t5-base

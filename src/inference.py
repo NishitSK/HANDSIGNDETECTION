@@ -52,8 +52,49 @@ class PredictionSmoother:
         self.buffer.clear()
 
 
+class KinematicVelocityTracker:
+    """Tracks hand centroid displacement across recent frames to detect motion vs static signs"""
+    def __init__(self, window_size=8, threshold=0.018):
+        self.window_size = window_size
+        self.threshold = threshold
+        self.positions = deque(maxlen=window_size)
+        self.last_velocity = 0.0
+
+    def update(self, landmarks):
+        """
+        landmarks: (62, 3) or None
+        Returns: is_motion (bool), velocity (float)
+        """
+        if landmarks is None:
+            self.positions.clear()
+            self.last_velocity = 0.0
+            return False, 0.0
+
+        hand_pts = landmarks[:42]
+        active_pts = hand_pts[np.any(hand_pts != 0, axis=1)]
+        if len(active_pts) == 0:
+            self.positions.clear()
+            self.last_velocity = 0.0
+            return False, 0.0
+
+        centroid = np.mean(active_pts[:, :2], axis=0)
+        self.positions.append(centroid)
+
+        if len(self.positions) < 3:
+            return False, 0.0
+
+        deltas = [np.linalg.norm(self.positions[i] - self.positions[i - 1]) for i in range(1, len(self.positions))]
+        self.last_velocity = float(np.mean(deltas))
+        is_motion = self.last_velocity >= self.threshold
+        return is_motion, self.last_velocity
+
+    def clear(self):
+        self.positions.clear()
+        self.last_velocity = 0.0
+
+
 class ISLInference:
-    """Real-time ISL detection and translation"""
+    """Real-time ISL detection and translation with Dual Ensemble (MLP + GRU)"""
     
     def __init__(self, model_path, config_path='config.yaml'):
         """
@@ -101,6 +142,42 @@ class ISLInference:
             self.class_names = [chr(i) for i in range(ord('A'), ord('Z')+1)]
             self.num_classes = len(self.class_names)
             self.sequence_length = self.config.get('model', 'sequence_length', default=30)
+
+        # Dual Ensemble Models: MLP (Static Handsigns) & GRU (Motion Gestures)
+        self.ensemble_mode = self.config.get('detection', 'mode', default='auto_ensemble')
+        self.mlp_model = None
+        self.gru_model = None
+        
+        # Load MLP model (specialized for static handsigns)
+        mlp_path = Path(self.config.get('model', 'mlp_model_path', default='results/ISL_MLP/isl_model.h5'))
+        if mlp_path.exists():
+            try:
+                self.mlp_model = keras.models.load_model(str(mlp_path), compile=False)
+                print(f"[OK] Dual Ensemble: MLP static model loaded from {mlp_path}")
+            except Exception as e:
+                print(f"[WARN] Failed loading MLP model: {e}")
+                
+        # Load GRU model (specialized for motion gestures)
+        gru_path = Path(self.config.get('model', 'gru_model_path', default='results/GRU/final/isl_model.h5'))
+        if gru_path.exists():
+            try:
+                self.gru_model = keras.models.load_model(str(gru_path), compile=False)
+                print(f"[OK] Dual Ensemble: GRU motion model loaded from {gru_path}")
+            except Exception as e:
+                print(f"[WARN] Failed loading GRU model: {e}")
+
+        # Fallback to base model if either is missing
+        if self.mlp_model is None:
+            self.mlp_model = self.model
+        if self.gru_model is None:
+            self.gru_model = self.model
+
+        # Motion / Velocity Tracker
+        vel_thresh = self.config.get('detection', 'motion_velocity_threshold', default=0.018)
+        self.velocity_tracker = KinematicVelocityTracker(window_size=8, threshold=vel_thresh)
+        self.gru_sequence_buffer = deque(maxlen=30)
+        self.active_engine = "MLP"
+        self.is_motion = False
         
         # Initialize components
         detect_face = self.config.get('detection', 'detect_face', default=False)
@@ -141,16 +218,16 @@ class ISLInference:
         
         print(f"[OK] Inference engine initialized")
         print(f"  Classes: {self.num_classes}")
-        print(f"  Sequence length: {self.sequence_length}")
+        print(f"  Ensemble Mode: {self.ensemble_mode} (MLP + GRU)")
         print(f"  Mode: Manual (capture on demand)")
     
-    def predict_gesture(self, candidates):
+    def predict_gesture(self, candidates, is_motion=False):
         """
-        Predict gesture from candidate landmark arrays.
-        Tiles each candidate across sequence_length and picks best candidate.
+        Predict gesture using either MLP (static) or GRU (motion), or auto-ensemble.
         
         Args:
             candidates: list of (62, 3) arrays or single (62, 3) array
+            is_motion: Boolean from KinematicVelocityTracker
         
         Returns:
             smoothed_pred_idx, smoothed_confidence
@@ -165,19 +242,51 @@ class ISLInference:
             self.smoother.clear()
             return None, 0.0
 
-        # Build batch by tiling each candidate to sequence_length
-        batch = np.array([np.tile(c.flatten(), (self.sequence_length, 1)) for c in candidates], dtype=np.float32)
-        probs_batch = self.model.predict(batch, verbose=0)
+        # Determine which engine to use based on mode & motion detection
+        use_gru = False
+        if self.ensemble_mode == 'gru_only':
+            use_gru = True
+        elif self.ensemble_mode == 'mlp_only':
+            use_gru = False
+        else: # auto_ensemble
+            use_gru = is_motion
+
+        self.active_engine = "GRU" if use_gru else "MLP"
+        target_model = self.gru_model if use_gru else self.mlp_model
         
-        best_idx = 0
-        best_conf = -1.0
-        for probs in probs_batch:
-            idx = int(np.argmax(probs))
-            conf = float(probs[idx])
-            if conf > best_conf:
-                best_conf = conf
-                best_idx = idx
+        if use_gru:
+            # GRU expects shape (batch, 30, 186)
+            primary_c = candidates[0]
+            self.gru_sequence_buffer.append(primary_c.flatten())
+            
+            if len(self.gru_sequence_buffer) < 30:
+                cur_list = list(self.gru_sequence_buffer)
+                padded_seq = [cur_list[0]] * (30 - len(cur_list)) + cur_list
+            else:
+                padded_seq = list(self.gru_sequence_buffer)
                 
+            gru_input = np.array(padded_seq, dtype=np.float32).reshape(1, 30, -1)
+            probs = target_model.predict(gru_input, verbose=0)[0]
+            best_idx = int(np.argmax(probs))
+            best_conf = float(probs[best_idx])
+        else:
+            # MLP expects shape (batch, 1, 126) - hands only (42 landmarks * 3 coords)
+            mlp_batch = []
+            for c in candidates:
+                hands_126 = c[:42].flatten()
+                mlp_batch.append(hands_126.reshape(1, 126))
+            mlp_batch = np.array(mlp_batch, dtype=np.float32)
+            
+            probs_batch = target_model.predict(mlp_batch, verbose=0)
+            best_idx = 0
+            best_conf = -1.0
+            for probs in probs_batch:
+                idx = int(np.argmax(probs))
+                conf = float(probs[idx])
+                if conf > best_conf:
+                    best_conf = conf
+                    best_idx = idx
+
         # Smooth predictions
         smoothed_idx, smoothed_conf = self.smoother.push(best_idx, best_conf)
         return smoothed_idx, smoothed_conf
@@ -199,6 +308,12 @@ class ISLInference:
         # Extract candidates and display landmarks from RAW UN-FLIPPED frame
         candidates, landmarks = self.landmark_extractor.extract_candidates_from_image(frame)
         
+        # Update kinematic velocity tracker
+        self.is_motion, cur_velocity = self.velocity_tracker.update(landmarks)
+        if not candidates:
+            self.gru_sequence_buffer.clear()
+            self.velocity_tracker.clear()
+        
         # Face mesh visualization only if detect_face is enabled
         full_face_results = None
         if self.landmark_extractor.detect_face and self.landmark_extractor.face_mesh is not None:
@@ -209,7 +324,7 @@ class ISLInference:
         confidence = 0.0
         
         if candidates:
-            pred_idx, conf = self.predict_gesture(candidates)
+            pred_idx, conf = self.predict_gesture(candidates, is_motion=self.is_motion)
             min_thresh = self.config.get('detection', 'confidence_threshold', default=0.6)
             
             if pred_idx is not None and conf >= min_thresh:
@@ -449,6 +564,18 @@ class ISLInference:
         cv2.rectangle(frame, (w - px(150), px(10)), (w - px(10), px(55)), fps_color, px(2))
         cv2.putText(frame, f"FPS: {self.fps:.1f}", (w - px(140), px(40)),
                    cv2.FONT_HERSHEY_SIMPLEX, 0.7 * s, fps_color, px(2), cv2.LINE_AA)
+
+        # Engine indicator badge (Dual Ensemble)
+        engine_label = f"ENGINE: {self.active_engine} {'(MOTION)' if self.active_engine == 'GRU' else '(STATIC)'}"
+        engine_color = (0, 200, 255) if self.active_engine == 'GRU' else (0, 255, 150)
+        badge_w = px(220)
+        badge_x = w - px(160) - badge_w - px(10)
+        cv2.rectangle(frame, (badge_x, px(10)), (badge_x + badge_w, px(55)), (30, 30, 30), -1)
+        cv2.rectangle(frame, (badge_x, px(10)), (badge_x + badge_w, px(55)), engine_color, px(2))
+        cv2.putText(frame, engine_label, (badge_x + px(10), px(35)),
+                    cv2.FONT_HERSHEY_DUPLEX, 0.42 * s, engine_color, px(1), cv2.LINE_AA)
+        cv2.putText(frame, f"Velocity: {self.velocity_tracker.last_velocity:.3f}", (badge_x + px(10), px(49)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.35 * s, (180, 180, 180), px(1), cv2.LINE_AA)
 
         # Detection status panel
         if prediction:
