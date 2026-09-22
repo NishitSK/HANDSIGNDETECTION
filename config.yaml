@@ -54,7 +54,7 @@ paths:
   checkpoints_dir: models/checkpoints
   dataset_cache: data/cache
   logs_dir: logs
-  model_path: models/saved/isl_model.h5
+  model_path: results/ISL_MLP/isl_model.h5
   model_save_dir: models/saved
 training:
   augmentation_probability: 0.9

@@ -428,332 +428,124 @@ class ISLGUIApp(QMainWindow):
         help_menu.addAction(about_action)
     
     def create_video_panel(self):
-        """Create video feed panel"""
+        """Create video feed panel with sleek HUD status card"""
         panel = QWidget()
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
         panel.setLayout(layout)
         
-        # Video label
+        # Video label with sleek rounded border
         self.video_label = QLabel()
         self.video_label.setAlignment(Qt.AlignCenter)
-        # Keep the floor low (16:9) and let the layout grow it — a 720px
-        # minimum forces the whole window taller than a 900px-class screen.
         self.video_label.setMinimumSize(480, 270)
         self.video_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.video_label.setStyleSheet("background-color: black; border: 2px solid #555;")
-        layout.addWidget(self.video_label)
+        self.video_label.setStyleSheet("""
+            QLabel {
+                background-color: #0d1117;
+                border: 2px solid #30363d;
+                border-radius: 12px;
+            }
+        """)
+        layout.addWidget(self.video_label, stretch=1)
         
-        # Current prediction display
-        prediction_group = QGroupBox("Current Detection")
-        prediction_layout = QVBoxLayout()
+        # Detection HUD Card
+        hud_card = QFrame()
+        hud_card.setObjectName("hudCard")
+        hud_card.setStyleSheet("""
+            #hudCard {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #161b22, stop:0.5 #1c2128, stop:1 #161b22);
+                border: 1px solid #30363d;
+                border-radius: 12px;
+            }
+        """)
+        hud_layout = QVBoxLayout()
+        hud_layout.setContentsMargins(16, 12, 16, 12)
+        hud_layout.setSpacing(8)
         
-        self.current_sign_label = QLabel("No sign detected")
-        self.current_sign_label.setAlignment(Qt.AlignCenter)
-        self.current_sign_label.setFont(QFont('Arial', 24, QFont.Bold))
-        self.current_sign_label.setStyleSheet("color: #00ff00; padding: 10px;")
-        prediction_layout.addWidget(self.current_sign_label)
+        # Top row: Sign Badge & Confidence percentage
+        top_row = QHBoxLayout()
+        top_row.setSpacing(12)
         
-        self.confidence_label = QLabel("Confidence: 0%")
-        self.confidence_label.setAlignment(Qt.AlignCenter)
-        self.confidence_label.setFont(QFont('Arial', 16))
-        prediction_layout.addWidget(self.confidence_label)
+        sign_container = QWidget()
+        sign_container_layout = QHBoxLayout()
+        sign_container_layout.setContentsMargins(0, 0, 0, 0)
+        sign_container_layout.setSpacing(10)
         
+        sign_icon = QLabel("✋")
+        sign_icon.setFont(QFont('Segoe UI Emoji', 16))
+        sign_container_layout.addWidget(sign_icon)
+        
+        self.current_sign_label = QLabel("NO SIGN DETECTED")
+        self.current_sign_label.setFont(QFont('Segoe UI', 18, QFont.Bold))
+        self.current_sign_label.setStyleSheet("color: #58a6ff; letter-spacing: 1px;")
+        sign_container_layout.addWidget(self.current_sign_label)
+        sign_container.setLayout(sign_container_layout)
+        top_row.addWidget(sign_container)
+        
+        top_row.addStretch()
+        
+        self.confidence_label = QLabel("Confidence: 0.0%")
+        self.confidence_label.setFont(QFont('Segoe UI', 15, QFont.Bold))
+        self.confidence_label.setStyleSheet("color: #3fb950;")
+        top_row.addWidget(self.confidence_label)
+        
+        hud_layout.addLayout(top_row)
+        
+        # Middle: High-tech progress bar
         self.confidence_bar = QProgressBar()
         self.confidence_bar.setMinimum(0)
         self.confidence_bar.setMaximum(100)
         self.confidence_bar.setValue(0)
         self.confidence_bar.setTextVisible(False)
-        prediction_layout.addWidget(self.confidence_bar)
+        self.confidence_bar.setFixedHeight(8)
+        self.confidence_bar.setStyleSheet("""
+            QProgressBar {
+                border: none;
+                border-radius: 4px;
+                background-color: #21262d;
+            }
+            QProgressBar::chunk {
+                border-radius: 4px;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #58a6ff, stop:0.7 #3fb950, stop:1 #2ea043);
+            }
+        """)
+        hud_layout.addWidget(self.confidence_bar)
         
-        prediction_group.setLayout(prediction_layout)
-        layout.addWidget(prediction_group)
+        # Bottom row: Quick action hints
+        bottom_hints = QHBoxLayout()
+        hints_label = QLabel("⚡ Shortcuts: [Space] Capture Sign  •  [T] Translate & Speak  •  [C] Clear  •  [M] Auto/Manual")
+        hints_label.setFont(QFont('Segoe UI', 9))
+        hints_label.setStyleSheet("color: #8b949e;")
+        bottom_hints.addWidget(hints_label)
+        bottom_hints.addStretch()
+        hud_layout.addLayout(bottom_hints)
+        
+        hud_card.setLayout(hud_layout)
+        layout.addWidget(hud_card)
         
         return panel
     
     def create_control_panel(self):
-        """Create control panel with scroll area"""
+        """Create tabbed control panel for sleek navigation and zero clutter"""
         panel = QWidget()
         main_layout = QVBoxLayout()
         main_layout.setSpacing(8)
-        main_layout.setContentsMargins(5, 5, 5, 5)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         panel.setLayout(main_layout)
         
-        # Create scroll area for controls
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        self.tabs = QTabWidget()
+        self.tabs.setObjectName("mainTabs")
         
-        scroll_widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(10)
-        scroll_widget.setLayout(layout)
-        
-        # === SECTION 1: DETECTED SEQUENCE ===
-        sequence_group = QGroupBox("📝 Detected Signs Sequence")
-        sequence_group.setMaximumHeight(120)
-        sequence_layout = QVBoxLayout()
-        
-        self.sequence_text = QTextEdit()
-        self.sequence_text.setReadOnly(True)
-        self.sequence_text.setMaximumHeight(80)
-        self.sequence_text.setFont(QFont('Courier New', 11, QFont.Bold))
-        self.sequence_text.setPlaceholderText("Signs will appear here: who → you → name")
-        sequence_layout.addWidget(self.sequence_text)
-        
-        sequence_group.setLayout(sequence_layout)
-        layout.addWidget(sequence_group)
-        
-        # === SECTION 1.5: DATA COLLECTION QUICK ACCESS ===
-        collect_quick_group = QGroupBox("📸 DATA COLLECTION CENTER")
-        collect_quick_group.setMaximumHeight(220)
-        collect_quick_layout = QVBoxLayout()
-        collect_quick_layout.setSpacing(8)
-        
-        # Quick class input with larger font
-        quick_class_layout = QHBoxLayout()
-        quick_class_label = QLabel("Symbol/Word:")
-        quick_class_label.setFont(QFont('Arial', 10, QFont.Bold))
-        quick_class_label.setStyleSheet("color: #00ddff;")
-        quick_class_layout.addWidget(quick_class_label)
-        
-        self.quick_class_input = QLineEdit()
-        self.quick_class_input.setPlaceholderText("Enter sign name (e.g., hello, thank_you)...")
-        self.quick_class_input.setFont(QFont('Arial', 11))
-        self.quick_class_input.setMinimumHeight(35)
-        self.quick_class_input.textChanged.connect(self.on_quick_class_changed)
-        self.quick_class_input.setStyleSheet("""
-            QLineEdit {
-                background-color: #2a2a2a;
-                color: white;
-                border: 2px solid #00aaff;
-                border-radius: 6px;
-                padding: 5px;
-            }
-            QLineEdit:focus {
-                border: 2px solid #00ff88;
-                background-color: #1a3a3a;
-            }
-        """)
-        quick_class_layout.addWidget(self.quick_class_input)
-        collect_quick_layout.addLayout(quick_class_layout)
-        
-        # Data collected counter - PROMINENT DISPLAY
-        self.data_counter_widget = QWidget()
-        counter_layout = QHBoxLayout()
-        counter_layout.setContentsMargins(0, 5, 0, 5)
-        
-        # Photos counter
-        photos_box = QWidget()
-        photos_box.setStyleSheet("""
-            QWidget {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #1a4d4d, stop:1 #2a6d6d);
-                border: 2px solid #00ff88;
-                border-radius: 8px;
-                padding: 8px;
-            }
-        """)
-        photos_layout = QVBoxLayout()
-        photos_layout.setSpacing(2)
-        photos_layout.setContentsMargins(10, 5, 10, 5)
-        
-        photos_title = QLabel("📷 PHOTOS")
-        photos_title.setFont(QFont('Arial', 8, QFont.Bold))
-        photos_title.setStyleSheet("color: #00ff88; border: none; background: transparent;")
-        photos_title.setAlignment(Qt.AlignCenter)
-        photos_layout.addWidget(photos_title)
-        
-        self.photos_count_label = QLabel("0")
-        self.photos_count_label.setFont(QFont('Arial', 24, QFont.Bold))
-        self.photos_count_label.setStyleSheet("color: #00ff88; border: none; background: transparent;")
-        self.photos_count_label.setAlignment(Qt.AlignCenter)
-        photos_layout.addWidget(self.photos_count_label)
-        
-        photos_box.setLayout(photos_layout)
-        counter_layout.addWidget(photos_box)
-        
-        # Videos counter
-        videos_box = QWidget()
-        videos_box.setStyleSheet("""
-            QWidget {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #4d1a4d, stop:1 #6d2a6d);
-                border: 2px solid #ff00ff;
-                border-radius: 8px;
-                padding: 8px;
-            }
-        """)
-        videos_layout = QVBoxLayout()
-        videos_layout.setSpacing(2)
-        videos_layout.setContentsMargins(10, 5, 10, 5)
-        
-        videos_title = QLabel("🎥 VIDEOS")
-        videos_title.setFont(QFont('Arial', 8, QFont.Bold))
-        videos_title.setStyleSheet("color: #ff00ff; border: none; background: transparent;")
-        videos_title.setAlignment(Qt.AlignCenter)
-        videos_layout.addWidget(videos_title)
-        
-        self.videos_count_label = QLabel("0")
-        self.videos_count_label.setFont(QFont('Arial', 24, QFont.Bold))
-        self.videos_count_label.setStyleSheet("color: #ff00ff; border: none; background: transparent;")
-        self.videos_count_label.setAlignment(Qt.AlignCenter)
-        videos_layout.addWidget(self.videos_count_label)
-        
-        videos_box.setLayout(videos_layout)
-        counter_layout.addWidget(videos_box)
-        
-        self.data_counter_widget.setLayout(counter_layout)
-        collect_quick_layout.addWidget(self.data_counter_widget)
-        
-        # Status message
-        self.quick_stats_label = QLabel("💡 Enter a symbol name above to begin")
-        self.quick_stats_label.setFont(QFont('Arial', 9))
-        self.quick_stats_label.setStyleSheet("color: #aaaaaa; padding: 5px; background: rgba(80, 80, 80, 0.3); border-radius: 4px;")
-        self.quick_stats_label.setWordWrap(True)
-        self.quick_stats_label.setAlignment(Qt.AlignCenter)
-        collect_quick_layout.addWidget(self.quick_stats_label)
-        
-        # CAPTURE BUTTONS - Photo and Video side by side
-        capture_buttons_widget = QWidget()
-        capture_buttons_layout = QHBoxLayout()
-        capture_buttons_layout.setSpacing(8)
-        capture_buttons_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # START CAPTURE PHOTO button
-        self.start_capture_btn = QPushButton("📸 START CAPTURE")
-        self.start_capture_btn.setMinimumHeight(55)
-        self.start_capture_btn.setFont(QFont('Arial', 12, QFont.Bold))
-        self.start_capture_btn.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #00cc00, stop:1 #008800);
-                color: white;
-                border: 3px solid #00ff00;
-                border-radius: 8px;
-                padding: 8px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #00ff00, stop:1 #00aa00);
-                border: 3px solid #88ff88;
-            }
-            QPushButton:pressed {
-                background: #006600;
-            }
-            QPushButton:disabled {
-                background-color: #444444;
-                color: #888888;
-                border: 2px solid #333333;
-            }
-        """)
-        self.start_capture_btn.clicked.connect(self.start_photo_capture)
-        self.start_capture_btn.setEnabled(False)
-        capture_buttons_layout.addWidget(self.start_capture_btn)
-        
-        # START VIDEO button
-        self.start_video_btn = QPushButton("🎥 START VIDEO")
-        self.start_video_btn.setMinimumHeight(55)
-        self.start_video_btn.setFont(QFont('Arial', 12, QFont.Bold))
-        self.start_video_btn.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #cc0066, stop:1 #880044);
-                color: white;
-                border: 3px solid #ff0088;
-                border-radius: 8px;
-                padding: 8px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ff0088, stop:1 #aa0055);
-                border: 3px solid #ff88bb;
-            }
-            QPushButton:pressed {
-                background: #660033;
-            }
-            QPushButton:disabled {
-                background-color: #444444;
-                color: #888888;
-                border: 2px solid #333333;
-            }
-        """)
-        self.start_video_btn.clicked.connect(self.start_video_capture)
-        self.start_video_btn.setEnabled(False)
-        capture_buttons_layout.addWidget(self.start_video_btn)
-        
-        capture_buttons_widget.setLayout(capture_buttons_layout)
-        collect_quick_layout.addWidget(capture_buttons_widget)
-        
-        # LIVE COLLECTION COUNTER - Shows current session captures
-        self.live_counter_label = QLabel("📊 Session: 0 photos captured")
-        self.live_counter_label.setFont(QFont('Arial', 10, QFont.Bold))
-        self.live_counter_label.setStyleSheet("""
-            color: #00ddff; 
-            padding: 10px; 
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                stop:0 #1a1a4d, stop:1 #2a2a6d);
-            border: 2px solid #00aaff;
-            border-radius: 8px;
-        """)
-        self.live_counter_label.setAlignment(Qt.AlignCenter)
-        self.live_counter_label.setVisible(False)  # Hidden until capture starts
-        collect_quick_layout.addWidget(self.live_counter_label)
-        
-        # Open full collection tool button (smaller)
-        self.quick_collect_btn = QPushButton("🔧 Open Full Collection Tool")
-        self.quick_collect_btn.setMinimumHeight(38)
-        self.quick_collect_btn.setFont(QFont('Arial', 10))
-        self.quick_collect_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #555555;
-                color: white;
-                border: 2px solid #777777;
-                border-radius: 6px;
-                padding: 8px;
-            }
-            QPushButton:hover {
-                background-color: #666666;
-                border: 2px solid #999999;
-            }
-            QPushButton:disabled {
-                background-color: #333333;
-                color: #666666;
-                border: 1px solid #444444;
-            }
-        """)
-        self.quick_collect_btn.clicked.connect(self.open_data_collector)
-        self.quick_collect_btn.setEnabled(False)
-        collect_quick_layout.addWidget(self.quick_collect_btn)
-        
-        collect_quick_group.setLayout(collect_quick_layout)
-        layout.addWidget(collect_quick_group)
-        
-        # === SECTION 2: TRANSLATION OUTPUT ===
-        translation_group = QGroupBox("✅ Grammar-Corrected Translation")
-        translation_group.setMaximumHeight(140)
-        translation_layout = QVBoxLayout()
-        
-        self.translation_text = QTextEdit()
-        self.translation_text.setReadOnly(True)
-        self.translation_text.setMaximumHeight(80)
-        self.translation_text.setFont(QFont('Arial', 12))
-        self.translation_text.setPlaceholderText("Corrected sentences will appear here...")
-        self.translation_text.setStyleSheet("background-color: #1a1a1a; color: #00ff88; border: 1px solid #00ff88;")
-        translation_layout.addWidget(self.translation_text)
-        
-        grammar_hint = QLabel("💡 'who you' → 'Who are you?'")
-        grammar_hint.setFont(QFont('Arial', 8))
-        grammar_hint.setStyleSheet("color: #888888; padding: 2px;")
-        translation_layout.addWidget(grammar_hint)
-        
-        translation_group.setLayout(translation_layout)
-        layout.addWidget(translation_group)
-        
-        # === SECTION 3: MAIN CONTROLS ===
-        controls_group = QGroupBox("🎮 Controls")
-        controls_layout = QVBoxLayout()
-        controls_layout.setSpacing(8)
+        # ==========================================
+        # TAB 1: 🗣️ LIVE TRANSLATION & SPEECH
+        # ==========================================
+        tab_translate = QWidget()
+        tab_trans_layout = QVBoxLayout()
+        tab_trans_layout.setSpacing(10)
+        tab_trans_layout.setContentsMargins(10, 12, 10, 10)
         
         # Mode indicator with toggle
         mode_container = QWidget()
@@ -761,353 +553,124 @@ class ISLGUIApp(QMainWindow):
         mode_layout.setContentsMargins(0, 0, 0, 0)
         
         self.mode_indicator = QLabel("● MANUAL MODE")
-        self.mode_indicator.setFont(QFont('Arial', 10, QFont.Bold))
-        self.mode_indicator.setStyleSheet("color: #00ff00; padding: 5px;")
+        self.mode_indicator.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.mode_indicator.setStyleSheet("color: #58a6ff; padding: 4px;")
         mode_layout.addWidget(self.mode_indicator)
         
-        self.mode_toggle_btn = QPushButton("⇄ Auto")
-        self.mode_toggle_btn.setMaximumWidth(70)
+        self.mode_toggle_btn = QPushButton("⇄ Switch to Auto")
+        self.mode_toggle_btn.setMinimumHeight(28)
         self.mode_toggle_btn.setCheckable(True)
         self.mode_toggle_btn.clicked.connect(self.toggle_mode)
         mode_layout.addWidget(self.mode_toggle_btn)
         
         mode_container.setLayout(mode_layout)
-        controls_layout.addWidget(mode_container)
+        tab_trans_layout.addWidget(mode_container)
         
-        # Capture button
+        # Capture button (prominent hero button)
         self.capture_btn = QPushButton("📸 CAPTURE SIGN (Space)")
-        self.capture_btn.setMinimumHeight(55)
-        self.capture_btn.setFont(QFont('Arial', 13, QFont.Bold))
+        self.capture_btn.setMinimumHeight(50)
+        self.capture_btn.setFont(QFont('Segoe UI', 12, QFont.Bold))
         self.capture_btn.setStyleSheet("""
             QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #00cc00, stop:1 #008800);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #238636, stop:1 #2ea043);
                 color: white;
-                border: 2px solid #00ff00;
+                border: 1px solid #3fb950;
                 border-radius: 8px;
-                padding: 10px;
+                padding: 8px;
             }
             QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #00ff00, stop:1 #00aa00);
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #2ea043, stop:1 #3fb950);
+                border: 1px solid #56d364;
             }
             QPushButton:pressed {
-                background: #006600;
+                background: #1b6528;
             }
         """)
         self.capture_btn.clicked.connect(self.manual_capture)
-        controls_layout.addWidget(self.capture_btn)
+        tab_trans_layout.addWidget(self.capture_btn)
         
-        # Action buttons row 1
-        action_row1 = QWidget()
-        action_layout1 = QHBoxLayout()
-        action_layout1.setContentsMargins(0, 0, 0, 0)
-        action_layout1.setSpacing(5)
+        # Sequence box
+        sequence_group = QGroupBox("📝 Detected Signs Sequence")
+        sequence_layout = QVBoxLayout()
+        self.sequence_text = QTextEdit()
+        self.sequence_text.setReadOnly(True)
+        self.sequence_text.setMaximumHeight(70)
+        self.sequence_text.setFont(QFont('Courier New', 11, QFont.Bold))
+        self.sequence_text.setPlaceholderText("Captured signs: A → B → C...")
+        sequence_layout.addWidget(self.sequence_text)
+        sequence_group.setLayout(sequence_layout)
+        tab_trans_layout.addWidget(sequence_group)
         
-        self.translate_btn = QPushButton("🔊 Translate")
+        # Translation output box
+        translation_group = QGroupBox("✅ Grammar AI Translation")
+        translation_layout = QVBoxLayout()
+        self.translation_text = QTextEdit()
+        self.translation_text.setReadOnly(True)
+        self.translation_text.setMaximumHeight(80)
+        self.translation_text.setFont(QFont('Segoe UI', 11))
+        self.translation_text.setPlaceholderText("English translation will appear here...")
+        translation_layout.addWidget(self.translation_text)
+        
+        grammar_hint = QLabel("💡 'who you' → 'Who are you?'  |  'name you what' → 'What is your name?'")
+        grammar_hint.setFont(QFont('Segoe UI', 8))
+        grammar_hint.setStyleSheet("color: #8b949e; padding: 2px;")
+        translation_layout.addWidget(grammar_hint)
+        translation_group.setLayout(translation_layout)
+        tab_trans_layout.addWidget(translation_group)
+        
+        # Action buttons
+        actions_layout = QHBoxLayout()
+        actions_layout.setSpacing(8)
+        
+        self.translate_btn = QPushButton("🔊 Speak & Translate (T)")
         self.translate_btn.setMinimumHeight(40)
+        self.translate_btn.setFont(QFont('Segoe UI', 10, QFont.Bold))
         self.translate_btn.setStyleSheet("""
             QPushButton {
-                background-color: #0066cc;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #1f6feb, stop:1 #388bfd);
                 color: white;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #0088ff; }
-        """)
-        self.translate_btn.clicked.connect(self.translate_sequence)
-        action_layout1.addWidget(self.translate_btn)
-        
-        self.clear_btn = QPushButton("🗑️ Clear")
-        self.clear_btn.setMinimumHeight(40)
-        self.clear_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #cc3300;
-                color: white;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QPushButton:hover { background-color: #ff4400; }
-        """)
-        self.clear_btn.clicked.connect(self.clear_sequence)
-        action_layout1.addWidget(self.clear_btn)
-        
-        action_row1.setLayout(action_layout1)
-        controls_layout.addWidget(action_row1)
-        
-        controls_group.setLayout(controls_layout)
-        layout.addWidget(controls_group)
-        
-        # === SECTION 3.5: SIGN LANGUAGE TUTOR & LEARNING (Ghost Guide) ===
-        tutor_group = QGroupBox("🎓 SIGN LANGUAGE TUTOR & PRACTICE (Learn ISL)")
-        tutor_layout = QVBoxLayout()
-        tutor_layout.setSpacing(8)
-
-        # Mirror camera toggle
-        mirror_container = QWidget()
-        mirror_layout = QHBoxLayout()
-        mirror_layout.setContentsMargins(0, 0, 0, 0)
-        self.mirror_checkbox = QCheckBox("🪞 Mirror Camera Feed (Selfie View)")
-        self.mirror_checkbox.setChecked(True)
-        self.mirror_checkbox.setFont(QFont('Arial', 9, QFont.Bold))
-        self.mirror_checkbox.setStyleSheet("color: #00ddff;")
-        self.mirror_checkbox.toggled.connect(self.on_mirror_toggled)
-        mirror_layout.addWidget(self.mirror_checkbox)
-        mirror_container.setLayout(mirror_layout)
-        tutor_layout.addWidget(mirror_container)
-
-        # Letter selection bar
-        letter_select_widget = QWidget()
-        letter_select_layout = QHBoxLayout()
-        letter_select_layout.setContentsMargins(0, 0, 0, 0)
-        letter_select_layout.setSpacing(6)
-
-        prev_btn = QPushButton("◀")
-        prev_btn.setFixedWidth(36)
-        prev_btn.setFixedHeight(32)
-        prev_btn.setStyleSheet("background-color: #333; color: white; border-radius: 4px; font-weight: bold;")
-        prev_btn.clicked.connect(self.on_tutor_prev_letter)
-        letter_select_layout.addWidget(prev_btn)
-
-        tutor_label = QLabel("Practice Sign:")
-        tutor_label.setFont(QFont('Arial', 9, QFont.Bold))
-        letter_select_layout.addWidget(tutor_label)
-
-        self.tutor_letter_combo = QComboBox()
-        self.tutor_letter_combo.setFont(QFont('Arial', 10, QFont.Bold))
-        self.tutor_letter_combo.setFixedHeight(32)
-        for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-            self.tutor_letter_combo.addItem(f"Letter {c}", c)
-        self.tutor_letter_combo.currentIndexChanged.connect(lambda i: self.on_tutor_letter_changed(self.tutor_letter_combo.currentData()))
-        letter_select_layout.addWidget(self.tutor_letter_combo, stretch=1)
-
-        next_btn = QPushButton("▶")
-        next_btn.setFixedWidth(36)
-        next_btn.setFixedHeight(32)
-        next_btn.setStyleSheet("background-color: #333; color: white; border-radius: 4px; font-weight: bold;")
-        next_btn.clicked.connect(self.on_tutor_next_letter)
-        letter_select_layout.addWidget(next_btn)
-
-        letter_select_widget.setLayout(letter_select_layout)
-        tutor_layout.addWidget(letter_select_widget)
-
-        # Ghost Guide Overlay controls (Toggle + Opacity slider)
-        overlay_ctrl_widget = QWidget()
-        overlay_ctrl_layout = QVBoxLayout()
-        overlay_ctrl_layout.setContentsMargins(0, 0, 0, 0)
-        overlay_ctrl_layout.setSpacing(4)
-
-        self.guide_checkbox = QCheckBox("👻 Show Transparent Guide on Camera")
-        self.guide_checkbox.setFont(QFont('Arial', 9, QFont.Bold))
-        self.guide_checkbox.setStyleSheet("color: #00ffaa;")
-        self.guide_checkbox.setChecked(False)
-        self.guide_checkbox.toggled.connect(self.on_guide_toggle)
-        overlay_ctrl_layout.addWidget(self.guide_checkbox)
-
-        opacity_widget = QWidget()
-        opacity_layout = QHBoxLayout()
-        opacity_layout.setContentsMargins(0, 0, 0, 0)
-        opacity_title = QLabel("Ghost Opacity:")
-        opacity_title.setFont(QFont('Arial', 8))
-        opacity_title.setStyleSheet("color: #888;")
-        opacity_layout.addWidget(opacity_title)
-
-        self.guide_opacity_slider = QSlider(Qt.Horizontal)
-        self.guide_opacity_slider.setRange(10, 95)
-        self.guide_opacity_slider.setValue(50)
-        self.guide_opacity_slider.valueChanged.connect(self.on_guide_opacity_changed)
-        opacity_layout.addWidget(self.guide_opacity_slider, stretch=1)
-
-        self.guide_opacity_label = QLabel("50%")
-        self.guide_opacity_label.setFont(QFont('Arial', 8, QFont.Bold))
-        self.guide_opacity_label.setStyleSheet("color: #00ffaa; min-width: 32px;")
-        opacity_layout.addWidget(self.guide_opacity_label)
-        opacity_widget.setLayout(opacity_layout)
-        overlay_ctrl_layout.addWidget(opacity_widget)
-
-        overlay_ctrl_widget.setLayout(overlay_ctrl_layout)
-        tutor_layout.addWidget(overlay_ctrl_widget)
-
-        # Reference Card Widget (Preview thumbnail + instructions)
-        card_widget = QWidget()
-        card_widget.setStyleSheet("""
-            QWidget {
-                background-color: #1c2430;
-                border: 1px solid #00aaff;
+                border: 1px solid #58a6ff;
                 border-radius: 8px;
             }
+            QPushButton:hover { background: #388bfd; }
         """)
-        card_layout = QHBoxLayout()
-        card_layout.setContentsMargins(8, 6, 8, 6)
-        card_layout.setSpacing(10)
-
-        # Image thumbnail
-        self.tutor_preview_label = QLabel()
-        self.tutor_preview_label.setFixedSize(90, 90)
-        self.tutor_preview_label.setAlignment(Qt.AlignCenter)
-        self.tutor_preview_label.setStyleSheet("background-color: black; border: 1px solid #555; border-radius: 4px;")
-        card_layout.addWidget(self.tutor_preview_label)
-
-        # Text information
-        info_layout = QVBoxLayout()
-        info_layout.setSpacing(4)
-        self.tutor_target_label = QLabel("Target Sign: Letter A")
-        self.tutor_target_label.setFont(QFont('Arial', 10, QFont.Bold))
-        self.tutor_target_label.setStyleSheet("color: #00ffaa; border: none; background: transparent;")
-        info_layout.addWidget(self.tutor_target_label)
-
-        self.tutor_hint_label = QLabel(ISL_LETTER_HINTS.get('A', ''))
-        self.tutor_hint_label.setFont(QFont('Arial', 8))
-        self.tutor_hint_label.setStyleSheet("color: #cccccc; border: none; background: transparent;")
-        self.tutor_hint_label.setWordWrap(True)
-        info_layout.addWidget(self.tutor_hint_label)
-
-        card_layout.addLayout(info_layout, stretch=1)
-        card_widget.setLayout(card_layout)
-        tutor_layout.addWidget(card_widget)
-
-        # Practice Match Status Gauge
-        self.tutor_match_status = QLabel("Ready to practice Letter A")
-        self.tutor_match_status.setFont(QFont('Arial', 9, QFont.Bold))
-        self.tutor_match_status.setStyleSheet("color: #00ddff; padding: 6px; background: rgba(0, 150, 255, 0.15); border-radius: 6px;")
-        self.tutor_match_status.setAlignment(Qt.AlignCenter)
-        self.tutor_match_status.setWordWrap(True)
-        tutor_layout.addWidget(self.tutor_match_status)
-
-        tutor_group.setLayout(tutor_layout)
-        layout.addWidget(tutor_group)
+        self.translate_btn.clicked.connect(self.translate_sequence)
+        actions_layout.addWidget(self.translate_btn)
         
-        # === SECTION 4: DATA COLLECTION & TRAINING ===
-        training_group = QGroupBox("🎓 Training Mode")
-        training_layout = QVBoxLayout()
-        training_layout.setSpacing(6)
-        
-        # Class input
-        class_label = QLabel("Sign/Class Name:")
-        class_label.setFont(QFont('Arial', 9, QFont.Bold))
-        training_layout.addWidget(class_label)
-        
-        self.class_name_input = QLineEdit()
-        self.class_name_input.setPlaceholderText("e.g., hello, thank_you, yes...")
-        self.class_name_input.setFont(QFont('Arial', 10))
-        self.class_name_input.setMinimumHeight(32)
-        self.class_name_input.textChanged.connect(self.on_class_name_changed)
-        self.class_name_input.setStyleSheet("""
-            QLineEdit {
-                background-color: #2a2a2a;
-                color: white;
-                border: 2px solid #555555;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            QLineEdit:focus {
-                border: 2px solid #00aaff;
-            }
-        """)
-        training_layout.addWidget(self.class_name_input)
-        
-        # Stats display
-        self.collection_stats_label = QLabel("� No class selected")
-        self.collection_stats_label.setFont(QFont('Courier', 8))
-        self.collection_stats_label.setStyleSheet("color: #aaaaaa; padding: 3px;")
-        self.collection_stats_label.setWordWrap(True)
-        training_layout.addWidget(self.collection_stats_label)
-        
-        # Training buttons
-        training_btns = QWidget()
-        training_btns_layout = QVBoxLayout()
-        training_btns_layout.setSpacing(5)
-        training_btns_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.collect_data_btn = QPushButton("📸 Collect Data")
-        self.collect_data_btn.setMinimumHeight(38)
-        self.collect_data_btn.setFont(QFont('Arial', 10, QFont.Bold))
-        self.collect_data_btn.setStyleSheet("""
+        self.clear_btn = QPushButton("🗑️ Clear (C)")
+        self.clear_btn.setMinimumHeight(40)
+        self.clear_btn.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.clear_btn.setStyleSheet("""
             QPushButton {
-                background-color: #ff6600;
-                color: white;
-                border-radius: 5px;
+                background-color: #21262d;
+                color: #f85149;
+                border: 1px solid #da3633;
+                border-radius: 8px;
             }
-            QPushButton:hover { background-color: #ff8833; }
-            QPushButton:disabled {
-                background-color: #444444;
-                color: #888888;
-            }
+            QPushButton:hover { background-color: #b62324; color: white; }
         """)
-        self.collect_data_btn.clicked.connect(self.open_data_collector)
-        self.collect_data_btn.setEnabled(False)
-        training_btns_layout.addWidget(self.collect_data_btn)
+        self.clear_btn.clicked.connect(self.clear_sequence)
+        actions_layout.addWidget(self.clear_btn)
+        tab_trans_layout.addLayout(actions_layout)
         
-        self.train_model_btn = QPushButton("🚀 TRAIN MODEL")
-        self.train_model_btn.setMinimumHeight(42)
-        self.train_model_btn.setFont(QFont('Arial', 11, QFont.Bold))
-        self.train_model_btn.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #cc0066, stop:1 #880044);
-                color: white;
-                border: 2px solid #ff0088;
-                border-radius: 6px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #ff0088, stop:1 #aa0055);
-            }
-        """)
-        self.train_model_btn.clicked.connect(self.train_model)
-        training_btns_layout.addWidget(self.train_model_btn)
-        
-        training_btns.setLayout(training_btns_layout)
-        training_layout.addWidget(training_btns)
-        
-        training_group.setLayout(training_layout)
-        layout.addWidget(training_group)
-        
-        # === SECTION 5: STATISTICS ===
-        stats_group = QGroupBox("📊 Session & Collection Statistics")
-        stats_group.setMaximumHeight(130)
-        stats_layout = QVBoxLayout()
-        
-        # Current session stats
-        self.stats_label = QLabel("Signs: 0 | Sentences: 0 | Accuracy: --")
-        self.stats_label.setFont(QFont('Courier New', 9))
-        self.stats_label.setStyleSheet("color: #ffffff; padding: 5px;")
-        self.stats_label.setWordWrap(True)
-        stats_layout.addWidget(self.stats_label)
-        
-        # Separator
-        sep_line = QLabel("─" * 35)
-        sep_line.setStyleSheet("color: #555555;")
-        stats_layout.addWidget(sep_line)
-        
-        # Collected data stats
-        self.collected_stats_label = QLabel("📦 Collected Data: Loading...")
-        self.collected_stats_label.setFont(QFont('Courier New', 9))
-        self.collected_stats_label.setStyleSheet("color: #00ddff; padding: 5px;")
-        self.collected_stats_label.setWordWrap(True)
-        stats_layout.addWidget(self.collected_stats_label)
-        
-        stats_group.setLayout(stats_layout)
-        layout.addWidget(stats_group)
-        
-        # Load collected data stats on startup
-        QTimer.singleShot(500, self.update_collected_stats)
-        
-        # === SECTION 5.5: DUAL ENSEMBLE ENGINE ===
+        # Dual Ensemble Engine selector card
         engine_group = QGroupBox("🤖 Recognition Engine")
         engine_layout = QVBoxLayout()
         engine_layout.setSpacing(6)
         
         mode_select_layout = QHBoxLayout()
-        mode_label = QLabel("Mode:")
-        mode_label.setFont(QFont('Arial', 9, QFont.Bold))
+        mode_label = QLabel("Active Pipeline:")
+        mode_label.setFont(QFont('Segoe UI', 9, QFont.Bold))
         mode_select_layout.addWidget(mode_label)
         
         self.engine_mode_combo = QComboBox()
         self.engine_mode_combo.addItems([
-            "⚡ Auto (MLP + GRU)",
-            "✋ MLP (Static Handsigns)",
-            "🌊 GRU (Motion Gestures)"
+            "⚡ Auto (MLP Static + GRU Motion)",
+            "✋ MLP Only (Static Handsigns)",
+            "🌊 GRU Only (Motion Gestures)"
         ])
         current_mode = self.config.get('detection', 'mode', default='auto_ensemble')
         if current_mode == 'mlp_only':
@@ -1118,201 +681,555 @@ class ISLGUIApp(QMainWindow):
             self.engine_mode_combo.setCurrentIndex(0)
             
         self.engine_mode_combo.currentIndexChanged.connect(self.on_engine_mode_changed)
-        self.engine_mode_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #2a2a2a;
-                color: #00ffff;
-                border: 1px solid #00aaff;
-                border-radius: 4px;
-                padding: 4px;
-                font-weight: bold;
-            }
-        """)
         mode_select_layout.addWidget(self.engine_mode_combo)
         engine_layout.addLayout(mode_select_layout)
         
-        self.engine_status_label = QLabel("Active: MLP (Static Signs)")
-        self.engine_status_label.setFont(QFont('Arial', 8))
-        self.engine_status_label.setStyleSheet("color: #00ff88; padding: 2px;")
+        self.engine_status_label = QLabel("Active: MLP (Static Signs) | v: 0.000")
+        self.engine_status_label.setFont(QFont('Segoe UI', 9))
+        self.engine_status_label.setStyleSheet("color: #3fb950; padding: 2px;")
         engine_layout.addWidget(self.engine_status_label)
         
         engine_group.setLayout(engine_layout)
-        layout.addWidget(engine_group)
+        tab_trans_layout.addWidget(engine_group)
         
-        # === SECTION 6: ACTIVE FEATURES ===
-        features_group = QGroupBox("⚡ Active Features")
-        features_group.setMaximumHeight(120)
+        tab_trans_layout.addStretch()
+        tab_translate.setLayout(tab_trans_layout)
+        self.tabs.addTab(tab_translate, "🗣️ Live Translate")
+        
+        # ==========================================
+        # TAB 2: 🎓 TUTOR & PRACTICE (Learn ISL)
+        # ==========================================
+        tab_tutor = QWidget()
+        tab_tutor_layout = QVBoxLayout()
+        tab_tutor_layout.setSpacing(10)
+        tab_tutor_layout.setContentsMargins(10, 12, 10, 10)
+        
+        # Camera Mirroring
+        self.mirror_checkbox = QCheckBox("🪞 Mirror Camera Feed (Selfie View)")
+        self.mirror_checkbox.setChecked(True)
+        self.mirror_checkbox.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        self.mirror_checkbox.setStyleSheet("color: #58a6ff;")
+        self.mirror_checkbox.toggled.connect(self.on_mirror_toggled)
+        tab_tutor_layout.addWidget(self.mirror_checkbox)
+        
+        # Letter selector
+        letter_select_widget = QWidget()
+        letter_select_layout = QHBoxLayout()
+        letter_select_layout.setContentsMargins(0, 0, 0, 0)
+        letter_select_layout.setSpacing(6)
+        
+        prev_btn = QPushButton("◀")
+        prev_btn.setFixedWidth(36)
+        prev_btn.setFixedHeight(34)
+        prev_btn.clicked.connect(self.on_tutor_prev_letter)
+        letter_select_layout.addWidget(prev_btn)
+        
+        tutor_label = QLabel("Practice Sign:")
+        tutor_label.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        letter_select_layout.addWidget(tutor_label)
+        
+        self.tutor_letter_combo = QComboBox()
+        self.tutor_letter_combo.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.tutor_letter_combo.setFixedHeight(34)
+        for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            self.tutor_letter_combo.addItem(f"Letter {c}", c)
+        self.tutor_letter_combo.currentIndexChanged.connect(lambda i: self.on_tutor_letter_changed(self.tutor_letter_combo.currentData()))
+        letter_select_layout.addWidget(self.tutor_letter_combo, stretch=1)
+        
+        next_btn = QPushButton("▶")
+        next_btn.setFixedWidth(36)
+        next_btn.setFixedHeight(34)
+        next_btn.clicked.connect(self.on_tutor_next_letter)
+        letter_select_layout.addWidget(next_btn)
+        
+        letter_select_widget.setLayout(letter_select_layout)
+        tab_tutor_layout.addWidget(letter_select_widget)
+        
+        # Ghost guide overlay
+        guide_group = QGroupBox("👻 Ghost Guide Overlay")
+        guide_layout = QVBoxLayout()
+        guide_layout.setSpacing(6)
+        
+        self.guide_checkbox = QCheckBox("Show Ghost Guide on Camera Video")
+        self.guide_checkbox.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        self.guide_checkbox.setStyleSheet("color: #3fb950;")
+        self.guide_checkbox.setChecked(False)
+        self.guide_checkbox.toggled.connect(self.on_guide_toggle)
+        guide_layout.addWidget(self.guide_checkbox)
+        
+        opacity_widget = QWidget()
+        opacity_layout = QHBoxLayout()
+        opacity_layout.setContentsMargins(0, 0, 0, 0)
+        opacity_title = QLabel("Opacity:")
+        opacity_title.setFont(QFont('Segoe UI', 8))
+        opacity_title.setStyleSheet("color: #8b949e;")
+        opacity_layout.addWidget(opacity_title)
+        
+        self.guide_opacity_slider = QSlider(Qt.Horizontal)
+        self.guide_opacity_slider.setRange(10, 95)
+        self.guide_opacity_slider.setValue(50)
+        self.guide_opacity_slider.valueChanged.connect(self.on_guide_opacity_changed)
+        opacity_layout.addWidget(self.guide_opacity_slider, stretch=1)
+        
+        self.guide_opacity_label = QLabel("50%")
+        self.guide_opacity_label.setFont(QFont('Segoe UI', 8, QFont.Bold))
+        self.guide_opacity_label.setStyleSheet("color: #3fb950; min-width: 32px;")
+        opacity_layout.addWidget(self.guide_opacity_label)
+        opacity_widget.setLayout(opacity_layout)
+        guide_layout.addWidget(opacity_widget)
+        guide_group.setLayout(guide_layout)
+        tab_tutor_layout.addWidget(guide_group)
+        
+        # Reference card
+        card_widget = QFrame()
+        card_widget.setStyleSheet("""
+            QFrame {
+                background-color: #161b22;
+                border: 1px solid #30363d;
+                border-radius: 10px;
+            }
+        """)
+        card_layout = QHBoxLayout()
+        card_layout.setContentsMargins(10, 8, 10, 8)
+        card_layout.setSpacing(12)
+        
+        self.tutor_preview_label = QLabel()
+        self.tutor_preview_label.setFixedSize(90, 90)
+        self.tutor_preview_label.setAlignment(Qt.AlignCenter)
+        self.tutor_preview_label.setStyleSheet("background-color: #0d1117; border: 1px solid #30363d; border-radius: 8px;")
+        card_layout.addWidget(self.tutor_preview_label)
+        
+        info_layout = QVBoxLayout()
+        info_layout.setSpacing(4)
+        self.tutor_target_label = QLabel("Target Sign: Letter A")
+        self.tutor_target_label.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.tutor_target_label.setStyleSheet("color: #58a6ff; border: none; background: transparent;")
+        info_layout.addWidget(self.tutor_target_label)
+        
+        self.tutor_hint_label = QLabel(ISL_LETTER_HINTS.get('A', ''))
+        self.tutor_hint_label.setFont(QFont('Segoe UI', 8))
+        self.tutor_hint_label.setStyleSheet("color: #c9d1d9; border: none; background: transparent;")
+        self.tutor_hint_label.setWordWrap(True)
+        info_layout.addWidget(self.tutor_hint_label)
+        
+        card_layout.addLayout(info_layout, stretch=1)
+        card_widget.setLayout(card_layout)
+        tab_tutor_layout.addWidget(card_widget)
+        
+        # Match status badge
+        self.tutor_match_status = QLabel("Ready to practice Letter A")
+        self.tutor_match_status.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.tutor_match_status.setStyleSheet("color: #58a6ff; padding: 10px; background: rgba(88, 166, 255, 0.12); border: 1px solid #58a6ff; border-radius: 8px;")
+        self.tutor_match_status.setAlignment(Qt.AlignCenter)
+        self.tutor_match_status.setWordWrap(True)
+        tab_tutor_layout.addWidget(self.tutor_match_status)
+        
+        tab_tutor_layout.addStretch()
+        tab_tutor.setLayout(tab_tutor_layout)
+        self.tabs.addTab(tab_tutor, "🎓 Tutor & Guide")
+        
+        # ==========================================
+        # TAB 3: 📸 DATA STUDIO & TRAINING
+        # ==========================================
+        tab_collector = QWidget()
+        tab_coll_scroll = QScrollArea()
+        tab_coll_scroll.setWidgetResizable(True)
+        tab_coll_scroll.setStyleSheet("border: none; background: transparent;")
+        tab_coll_widget = QWidget()
+        tab_coll_layout = QVBoxLayout()
+        tab_coll_layout.setSpacing(10)
+        tab_coll_layout.setContentsMargins(8, 10, 8, 10)
+        
+        # Quick collector
+        collect_quick_group = QGroupBox("📸 Data Capture")
+        collect_quick_layout = QVBoxLayout()
+        collect_quick_layout.setSpacing(8)
+        
+        quick_class_layout = QHBoxLayout()
+        quick_class_label = QLabel("Sign Name:")
+        quick_class_label.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        quick_class_label.setStyleSheet("color: #58a6ff;")
+        quick_class_layout.addWidget(quick_class_label)
+        
+        self.quick_class_input = QLineEdit()
+        self.quick_class_input.setPlaceholderText("Enter sign name (e.g., hello, thank_you)...")
+        self.quick_class_input.setFont(QFont('Segoe UI', 10))
+        self.quick_class_input.setMinimumHeight(32)
+        self.quick_class_input.textChanged.connect(self.on_quick_class_changed)
+        quick_class_layout.addWidget(self.quick_class_input)
+        collect_quick_layout.addLayout(quick_class_layout)
+        
+        # Counter cards
+        self.data_counter_widget = QWidget()
+        counter_layout = QHBoxLayout()
+        counter_layout.setContentsMargins(0, 4, 0, 4)
+        
+        photos_box = QWidget()
+        photos_box.setStyleSheet("background: #1c2128; border: 1px solid #3fb950; border-radius: 8px; padding: 6px;")
+        photos_layout = QVBoxLayout()
+        photos_title = QLabel("📷 PHOTOS")
+        photos_title.setFont(QFont('Segoe UI', 8, QFont.Bold))
+        photos_title.setStyleSheet("color: #3fb950; border: none; background: transparent;")
+        photos_title.setAlignment(Qt.AlignCenter)
+        photos_layout.addWidget(photos_title)
+        self.photos_count_label = QLabel("0")
+        self.photos_count_label.setFont(QFont('Segoe UI', 20, QFont.Bold))
+        self.photos_count_label.setStyleSheet("color: #3fb950; border: none; background: transparent;")
+        self.photos_count_label.setAlignment(Qt.AlignCenter)
+        photos_layout.addWidget(self.photos_count_label)
+        photos_box.setLayout(photos_layout)
+        counter_layout.addWidget(photos_box)
+        
+        videos_box = QWidget()
+        videos_box.setStyleSheet("background: #1c2128; border: 1px solid #f778ba; border-radius: 8px; padding: 6px;")
+        videos_layout = QVBoxLayout()
+        videos_title = QLabel("🎥 VIDEOS")
+        videos_title.setFont(QFont('Segoe UI', 8, QFont.Bold))
+        videos_title.setStyleSheet("color: #f778ba; border: none; background: transparent;")
+        videos_title.setAlignment(Qt.AlignCenter)
+        videos_layout.addWidget(videos_title)
+        self.videos_count_label = QLabel("0")
+        self.videos_count_label.setFont(QFont('Segoe UI', 20, QFont.Bold))
+        self.videos_count_label.setStyleSheet("color: #f778ba; border: none; background: transparent;")
+        self.videos_count_label.setAlignment(Qt.AlignCenter)
+        videos_layout.addWidget(self.videos_count_label)
+        videos_box.setLayout(videos_layout)
+        counter_layout.addWidget(videos_box)
+        
+        self.data_counter_widget.setLayout(counter_layout)
+        collect_quick_layout.addWidget(self.data_counter_widget)
+        
+        self.quick_stats_label = QLabel("💡 Enter a sign name above to begin recording")
+        self.quick_stats_label.setFont(QFont('Segoe UI', 8))
+        self.quick_stats_label.setStyleSheet("color: #8b949e; padding: 4px; background: rgba(139, 148, 158, 0.1); border-radius: 6px;")
+        self.quick_stats_label.setAlignment(Qt.AlignCenter)
+        collect_quick_layout.addWidget(self.quick_stats_label)
+        
+        # Action capture buttons
+        capture_buttons_layout = QHBoxLayout()
+        self.start_capture_btn = QPushButton("📸 CAPTURE PHOTO")
+        self.start_capture_btn.setMinimumHeight(44)
+        self.start_capture_btn.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.start_capture_btn.clicked.connect(self.start_photo_capture)
+        self.start_capture_btn.setEnabled(False)
+        capture_buttons_layout.addWidget(self.start_capture_btn)
+        
+        self.start_video_btn = QPushButton("🎥 RECORD VIDEO")
+        self.start_video_btn.setMinimumHeight(44)
+        self.start_video_btn.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.start_video_btn.clicked.connect(self.start_video_capture)
+        self.start_video_btn.setEnabled(False)
+        capture_buttons_layout.addWidget(self.start_video_btn)
+        collect_quick_layout.addLayout(capture_buttons_layout)
+        
+        self.live_counter_label = QLabel("📊 Session: 0 captured")
+        self.live_counter_label.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        self.live_counter_label.setStyleSheet("color: #58a6ff; padding: 8px; background: #161b22; border: 1px solid #30363d; border-radius: 6px;")
+        self.live_counter_label.setAlignment(Qt.AlignCenter)
+        self.live_counter_label.setVisible(False)
+        collect_quick_layout.addWidget(self.live_counter_label)
+        
+        self.quick_collect_btn = QPushButton("🔧 Launch Standalone Collector Tool")
+        self.quick_collect_btn.setMinimumHeight(34)
+        self.quick_collect_btn.clicked.connect(self.open_data_collector)
+        self.quick_collect_btn.setEnabled(False)
+        collect_quick_layout.addWidget(self.quick_collect_btn)
+        collect_quick_group.setLayout(collect_quick_layout)
+        tab_coll_layout.addWidget(collect_quick_group)
+        
+        # Training group
+        training_group = QGroupBox("🚀 Model Training")
+        training_layout = QVBoxLayout()
+        training_layout.setSpacing(6)
+        
+        self.class_name_input = QLineEdit()
+        self.class_name_input.setPlaceholderText("Class name to train...")
+        self.class_name_input.textChanged.connect(self.on_class_name_changed)
+        training_layout.addWidget(self.class_name_input)
+        
+        self.collection_stats_label = QLabel("No class selected")
+        self.collection_stats_label.setFont(QFont('Segoe UI', 8))
+        self.collection_stats_label.setStyleSheet("color: #8b949e;")
+        training_layout.addWidget(self.collection_stats_label)
+        
+        self.collect_data_btn = QPushButton("📸 Collect Batch Data")
+        self.collect_data_btn.clicked.connect(self.open_data_collector)
+        self.collect_data_btn.setEnabled(False)
+        training_layout.addWidget(self.collect_data_btn)
+        
+        self.train_model_btn = QPushButton("⚡ RETRAIN MODEL NOW")
+        self.train_model_btn.setMinimumHeight(40)
+        self.train_model_btn.setFont(QFont('Segoe UI', 10, QFont.Bold))
+        self.train_model_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #8957e5, stop:1 #a371f7);
+                color: white;
+                border: 1px solid #bc8cff;
+                border-radius: 8px;
+            }
+            QPushButton:hover { background: #a371f7; }
+        """)
+        self.train_model_btn.clicked.connect(self.train_model)
+        self.train_model_btn.setEnabled(False)
+        training_layout.addWidget(self.train_model_btn)
+        
+        self.collected_stats_label = QLabel("📦 Loading dataset...")
+        self.collected_stats_label.setFont(QFont('Courier New', 8))
+        self.collected_stats_label.setStyleSheet("color: #58a6ff;")
+        training_layout.addWidget(self.collected_stats_label)
+        training_group.setLayout(training_layout)
+        tab_coll_layout.addWidget(training_group)
+        
+        tab_coll_widget.setLayout(tab_coll_layout)
+        tab_coll_scroll.setWidget(tab_coll_widget)
+        tab_collector_layout = QVBoxLayout()
+        tab_collector_layout.setContentsMargins(0, 0, 0, 0)
+        tab_collector_layout.addWidget(tab_coll_scroll)
+        tab_collector.setLayout(tab_collector_layout)
+        self.tabs.addTab(tab_collector, "📸 Data Studio")
+        
+        # ==========================================
+        # TAB 4: 📊 SYSTEM & ANALYTICS
+        # ==========================================
+        tab_stats = QWidget()
+        tab_stats_layout = QVBoxLayout()
+        tab_stats_layout.setSpacing(10)
+        tab_stats_layout.setContentsMargins(10, 12, 10, 10)
+        
+        stats_group = QGroupBox("📊 Session Metrics")
+        stats_layout = QVBoxLayout()
+        stats_layout.setSpacing(6)
+        
+        self.fps_label = QLabel("⚡ Video FPS: 0.0")
+        self.fps_label.setFont(QFont('Segoe UI', 9))
+        self.fps_label.setStyleSheet("color: #3fb950;")
+        stats_layout.addWidget(self.fps_label)
+        
+        self.captures_label = QLabel("📸 Total Captures: 0")
+        self.captures_label.setFont(QFont('Segoe UI', 9))
+        stats_layout.addWidget(self.captures_label)
+        
+        self.sentences_label = QLabel("📝 Sentences Spoken: 0")
+        self.sentences_label.setFont(QFont('Segoe UI', 9))
+        stats_layout.addWidget(self.sentences_label)
+        
+        self.uptime_label = QLabel("⏱️ Session Uptime: 00:00")
+        self.uptime_label.setFont(QFont('Segoe UI', 9))
+        stats_layout.addWidget(self.uptime_label)
+        stats_group.setLayout(stats_layout)
+        tab_stats_layout.addWidget(stats_group)
+        
+        # Active features
+        features_group = QGroupBox("⚡ Active Capabilities")
         features_layout = QVBoxLayout()
-        
-        features_text = "✓ Dual Ensemble: MLP + GRU\n✓ Real-time Hands Tracking\n✓ Kinematic Velocity Routing\n✓ Real-time Voice TTS"
+        features_text = "✓ Dual Ensemble: MLP (126) + GRU (186)\n✓ Kinematic Velocity Routing\n✓ Real-time Hands Tracking (MediaPipe)\n✓ Rule-based Grammar Engine\n✓ Real-time Speech Synthesis (pyttsx3)"
         features_label = QLabel(features_text)
-        features_label.setFont(QFont('Arial', 8))
-        features_label.setStyleSheet("color: #00ff00;")
+        features_label.setFont(QFont('Segoe UI', 9))
+        features_label.setStyleSheet("color: #3fb950; line-height: 1.4;")
         features_layout.addWidget(features_label)
-        
         features_group.setLayout(features_layout)
-        layout.addWidget(features_group)
+        tab_stats_layout.addWidget(features_group)
         
-        # Add stretch at bottom
-        layout.addStretch()
+        tab_stats_layout.addStretch()
+        tab_stats.setLayout(tab_stats_layout)
+        self.tabs.addTab(tab_stats, "📊 Analytics")
         
-        scroll.setWidget(scroll_widget)
-        main_layout.addWidget(scroll)
+        main_layout.addWidget(self.tabs)
+        
+        # Trigger stats loader
+        QTimer.singleShot(500, self.update_collected_stats)
         
         return panel
     
     def apply_theme(self):
-        """Apply modern dark theme with gradients"""
+        """Apply modern dark obsidian theme with clean Vercel/GitHub aesthetic"""
         self.setStyleSheet("""
             /* Main Window */
             QMainWindow {
-                background-color: #1a1a1a;
+                background-color: #0d1117;
+                color: #f0f6fc;
+            }
+            
+            /* Tabs */
+            QTabWidget::pane {
+                border: 1px solid #30363d;
+                background: #161b22;
+                border-radius: 10px;
+                top: -1px;
+            }
+            QTabBar::tab {
+                background: #0d1117;
+                color: #8b949e;
+                border: 1px solid #30363d;
+                border-bottom: none;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                padding: 8px 14px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-weight: bold;
+                font-size: 11px;
+                margin-right: 3px;
+            }
+            QTabBar::tab:selected {
+                background: #161b22;
+                color: #58a6ff;
+                border-top: 2px solid #58a6ff;
+            }
+            QTabBar::tab:hover:!selected {
+                background: #1c2128;
+                color: #c9d1d9;
             }
             
             /* Group Boxes */
             QGroupBox {
-                color: #ffffff;
-                background-color: #252525;
-                border: 2px solid #404040;
-                border-radius: 8px;
-                margin-top: 12px;
+                color: #f0f6fc;
+                background-color: #161b22;
+                border: 1px solid #30363d;
+                border-radius: 10px;
+                margin-top: 14px;
+                font-family: 'Segoe UI', Arial, sans-serif;
                 font-weight: bold;
                 font-size: 11px;
-                padding: 15px 10px 10px 10px;
+                padding: 14px 10px 10px 10px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
                 subcontrol-position: top left;
-                left: 15px;
-                top: 3px;
-                padding: 0 8px;
-                background-color: #252525;
-                color: #00ddff;
+                left: 14px;
+                top: 2px;
+                padding: 2px 8px;
+                background-color: #161b22;
+                color: #58a6ff;
+                border-radius: 4px;
             }
             
-            /* Buttons - Default */
+            /* Buttons */
             QPushButton {
-                background-color: #3a3a3a;
-                color: white;
-                border: 1px solid #555555;
-                border-radius: 6px;
-                padding: 8px 12px;
+                background-color: #21262d;
+                color: #f0f6fc;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-family: 'Segoe UI', Arial, sans-serif;
                 font-size: 10px;
                 font-weight: bold;
                 min-height: 28px;
             }
             QPushButton:hover {
-                background-color: #4a4a4a;
-                border: 1px solid #777777;
+                background-color: #30363d;
+                border-color: #8b949e;
             }
             QPushButton:pressed {
-                background-color: #2a2a2a;
+                background-color: #161b22;
             }
             QPushButton:disabled {
-                background-color: #2a2a2a;
-                color: #666666;
-                border: 1px solid #333333;
+                background-color: #161b22;
+                color: #484f58;
+                border: 1px solid #21262d;
             }
             
-            /* Text Edits */
-            QTextEdit {
-                background-color: #1e1e1e;
-                color: #ffffff;
-                border: 1px solid #404040;
-                border-radius: 5px;
+            /* Text Inputs */
+            QTextEdit, QPlainTextEdit {
+                background-color: #0d1117;
+                color: #f0f6fc;
+                border: 1px solid #30363d;
+                border-radius: 8px;
                 padding: 8px;
+                font-family: 'Segoe UI', Arial, sans-serif;
                 font-size: 11px;
-                selection-background-color: #0066cc;
+                selection-background-color: #1f6feb;
             }
-            QTextEdit:focus {
-                border: 1px solid #0088ff;
+            QTextEdit:focus, QPlainTextEdit:focus {
+                border: 1px solid #58a6ff;
             }
             
-            /* Line Edits */
             QLineEdit {
-                background-color: #252525;
-                color: #ffffff;
-                border: 1px solid #404040;
-                border-radius: 4px;
-                padding: 6px;
+                background-color: #0d1117;
+                color: #f0f6fc;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                padding: 6px 10px;
+                font-family: 'Segoe UI', Arial, sans-serif;
                 font-size: 10px;
             }
             QLineEdit:focus {
-                border: 2px solid #0088ff;
+                border: 1px solid #58a6ff;
             }
             
-            /* Progress Bars */
-            QProgressBar {
-                border: 1px solid #404040;
-                border-radius: 4px;
-                text-align: center;
-                height: 22px;
-                background-color: #1e1e1e;
-                color: white;
+            QComboBox {
+                background-color: #0d1117;
+                color: #58a6ff;
+                border: 1px solid #30363d;
+                border-radius: 6px;
+                padding: 5px 10px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 10px;
                 font-weight: bold;
             }
-            QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #00ff00, stop:0.5 #00dd00, stop:1 #00aa00);
-                border-radius: 3px;
+            QComboBox:focus {
+                border: 1px solid #58a6ff;
             }
-            
-            /* Labels */
-            QLabel {
-                color: #e0e0e0;
-                background: transparent;
-            }
-            
-            /* Scroll Area */
-            QScrollArea {
-                border: none;
-                background: transparent;
-            }
-            QScrollBar:vertical {
-                background-color: #1e1e1e;
-                width: 12px;
+            QComboBox QAbstractItemView {
+                background-color: #161b22;
+                color: #f0f6fc;
+                selection-background-color: #1f6feb;
+                border: 1px solid #30363d;
                 border-radius: 6px;
             }
+            
+            /* Scrollbars */
+            QScrollBar:vertical {
+                background: #0d1117;
+                width: 8px;
+                border-radius: 4px;
+                margin: 0px;
+            }
             QScrollBar::handle:vertical {
-                background-color: #505050;
-                border-radius: 5px;
+                background: #30363d;
+                border-radius: 4px;
                 min-height: 20px;
             }
             QScrollBar::handle:vertical:hover {
-                background-color: #606060;
+                background: #58a6ff;
             }
-            QScrollBar::add-line:vertical,
-            QScrollBar::sub-line:vertical {
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
             }
             
-            /* Menu Bar */
+            /* Menu & Status Bar */
             QMenuBar {
-                background-color: #2a2a2a;
-                color: white;
-                border-bottom: 1px solid #404040;
+                background-color: #161b22;
+                color: #f0f6fc;
+                border-bottom: 1px solid #30363d;
+                font-family: 'Segoe UI', Arial, sans-serif;
             }
             QMenuBar::item {
-                padding: 5px 12px;
+                padding: 6px 12px;
                 background: transparent;
             }
             QMenuBar::item:selected {
-                background-color: #0066cc;
+                background-color: #21262d;
+                border-radius: 4px;
             }
             QMenu {
-                background-color: #2a2a2a;
-                color: white;
-                border: 1px solid #404040;
+                background-color: #161b22;
+                color: #f0f6fc;
+                border: 1px solid #30363d;
+                border-radius: 8px;
+                padding: 4px;
             }
             QMenu::item:selected {
-                background-color: #0066cc;
+                background-color: #1f6feb;
+                border-radius: 4px;
             }
             
-            /* Status Bar */
             QStatusBar {
-                background-color: #1e1e1e;
-                color: #00ff88;
-                border-top: 1px solid #404040;
+                background-color: #0d1117;
+                color: #3fb950;
+                border-top: 1px solid #30363d;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-weight: bold;
             }
         """)
     
