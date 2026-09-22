@@ -25,6 +25,33 @@ from utils.camera import open_camera
 from models.gesture_model import PositionalEncoding, TransformerBlock
 
 
+class PredictionSmoother:
+    """Moving-window majority vote smoother with confidence averaging"""
+    def __init__(self, window_size=5):
+        self.window_size = window_size
+        self.buffer = []
+
+    def push(self, index, confidence):
+        self.buffer.append((index, confidence))
+        if len(self.buffer) > self.window_size:
+            self.buffer.pop(0)
+        if len(self.buffer) < 2:
+            return index, confidence
+
+        from collections import Counter
+        counts = Counter(idx for idx, _ in self.buffer)
+        winner_idx, count = counts.most_common(1)[0]
+        # Require clear majority to eliminate jitter and fluctuating predictions
+        if count < max(2, (len(self.buffer) // 2) + 1):
+            return None, 0.0
+        winning_confs = [c for idx, c in self.buffer if idx == winner_idx]
+        avg_conf = float(np.mean(winning_confs))
+        return winner_idx, avg_conf
+
+    def clear(self):
+        self.buffer.clear()
+
+
 class ISLInference:
     """Real-time ISL detection and translation"""
     
@@ -45,41 +72,48 @@ class ISLInference:
                 'PositionalEncoding': PositionalEncoding,
                 'TransformerBlock': TransformerBlock
             })
-            print("✓ Model loaded")
+            print("[OK] Model loaded")
         except ValueError:
             # Fallback: try loading without custom_objects (will raise if unknown types exist)
             self.model = keras.models.load_model(model_path)
-            print("✓ Model loaded (fallback)")
+            print("[OK] Model loaded (fallback)")
         
         # Load metadata - try model-specific metadata first, then fallback
         model_path_obj = Path(model_path)
-        metadata_path = model_path_obj.parent / f"{model_path_obj.stem}_metadata.json"
-        
+        metadata_path = model_path_obj.parent / 'model_metadata.json'
         if not metadata_path.exists():
-            # Fallback to generic metadata
-            metadata_path = model_path_obj.parent / 'model_metadata.json'
+            metadata_path = Path('models/saved/model_metadata.json')
         
-        if not metadata_path.exists():
-            raise FileNotFoundError(f"No metadata found for model: {model_path}")
+        if metadata_path.exists():
+            with open(metadata_path, 'r') as f:
+                self.metadata = json.load(f)
+                self.class_names = self.metadata['class_names']
+                self.num_classes = self.metadata['num_classes']
+                # Determine sequence length from model input shape or metadata
+                if 'input_shape' in self.metadata:
+                    self.sequence_length = self.metadata['input_shape'][0]
+                elif 'input_shape' in self.metadata.get('model_info', {}):
+                    self.sequence_length = self.metadata['model_info']['input_shape'][0]
+                else:
+                    self.sequence_length = self.config.get('model', 'sequence_length', default=30)
+        else:
+            # Default classes
+            self.class_names = [chr(i) for i in range(ord('A'), ord('Z')+1)]
+            self.num_classes = len(self.class_names)
+            self.sequence_length = self.config.get('model', 'sequence_length', default=30)
         
-        with open(metadata_path, 'r') as f:
-            metadata = json.load(f)
-        
-        self.class_names = metadata['class_names']
-        self.num_classes = len(self.class_names)
-        self.sequence_length = metadata['input_shape'][0]
-        
-        # Initialize components - Enable both hands + face detection
+        # Initialize components
+        detect_face = self.config.get('detection', 'detect_face', default=False)
         self.landmark_extractor = LandmarkExtractor(
-            static_mode=False,
-            max_hands=2,  # Detect both hands
+            detect_face=detect_face,
             min_detection_confidence=self.config.get('detection', 'min_detection_confidence', default=0.5),
-            min_tracking_confidence=self.config.get('detection', 'min_tracking_confidence', default=0.5),
-            detect_face=True  # Enable face mesh
+            min_tracking_confidence=self.config.get('detection', 'min_tracking_confidence', default=0.5)
         )
-        
         self.grammar_corrector = GrammarCorrector()
+        
+        # Initialize TTS Engine with config settings
         self.tts_engine = EnhancedTTS(
+            engine=self.config.get('tts', 'engine', default='pyttsx3'),
             rate=self.config.get('tts', 'rate', default=150),
             volume=self.config.get('tts', 'volume', default=1.0),
             voice_index=self.config.get('tts', 'voice_index', default=1)
@@ -87,6 +121,7 @@ class ISLInference:
         
         # Prediction smoothing
         smoothing_window = self.config.get('detection', 'smoothing_window', default=5)
+        self.smoother = PredictionSmoother(window_size=smoothing_window)
         self.prediction_buffer = deque(maxlen=smoothing_window)
         
         # Gesture buffering
@@ -104,55 +139,48 @@ class ISLInference:
         # Manual mode support
         self.manual_mode = True  # Default to manual mode for better accuracy
         
-        print(f"✓ Inference engine initialized")
+        print(f"[OK] Inference engine initialized")
         print(f"  Classes: {self.num_classes}")
         print(f"  Sequence length: {self.sequence_length}")
         print(f"  Mode: Manual (capture on demand)")
     
-    def predict_gesture(self, landmarks):
+    def predict_gesture(self, candidates):
         """
-        Predict gesture from landmarks
+        Predict gesture from candidate landmark arrays.
+        Tiles each candidate across sequence_length and picks best candidate.
         
         Args:
-            landmarks: Hand landmarks (21, 3)
+            candidates: list of (62, 3) arrays or single (62, 3) array
         
         Returns:
-            prediction, confidence
+            smoothed_pred_idx, smoothed_confidence
         """
-        # Add to sequence buffer
-        self.landmark_sequence.append(landmarks.flatten())
-        
-        # Need full sequence
-        if len(self.landmark_sequence) < self.sequence_length:
+        if candidates is None:
+            self.smoother.clear()
             return None, 0.0
+            
+        if isinstance(candidates, np.ndarray) and candidates.ndim == 2:
+            candidates = [candidates]
+        elif not candidates:
+            self.smoother.clear()
+            return None, 0.0
+
+        # Build batch by tiling each candidate to sequence_length
+        batch = np.array([np.tile(c.flatten(), (self.sequence_length, 1)) for c in candidates], dtype=np.float32)
+        probs_batch = self.model.predict(batch, verbose=0)
         
-        # Prepare input
-        sequence = np.array(list(self.landmark_sequence))
-        sequence = sequence.reshape(1, self.sequence_length, -1)
-        
-        # Predict
-        prediction_probs = self.model.predict(sequence, verbose=0)[0]
-        
-        # Get top prediction
-        pred_idx = np.argmax(prediction_probs)
-        confidence = prediction_probs[pred_idx]
-        
+        best_idx = 0
+        best_conf = -1.0
+        for probs in probs_batch:
+            idx = int(np.argmax(probs))
+            conf = float(probs[idx])
+            if conf > best_conf:
+                best_conf = conf
+                best_idx = idx
+                
         # Smooth predictions
-        self.prediction_buffer.append((pred_idx, confidence))
-        
-        # Get most common prediction in buffer
-        if len(self.prediction_buffer) >= 3:
-            pred_indices = [p[0] for p in self.prediction_buffer]
-            confidences = [p[1] for p in self.prediction_buffer]
-            
-            # Most frequent prediction
-            from collections import Counter
-            most_common = Counter(pred_indices).most_common(1)[0][0]
-            avg_confidence = np.mean([c for idx, c in zip(pred_indices, confidences) if idx == most_common])
-            
-            return most_common, avg_confidence
-        
-        return pred_idx, confidence
+        smoothed_idx, smoothed_conf = self.smoother.push(best_idx, best_conf)
+        return smoothed_idx, smoothed_conf
     
     def process_frame(self, frame, mirror_display=False):
         """
@@ -168,24 +196,23 @@ class ISLInference:
         """
         start_time = time.time()
         
-        # Extract landmarks from RAW UN-FLIPPED frame for anatomically correct classification
-        landmarks = self.landmark_extractor.extract_from_image(frame)
+        # Extract candidates and display landmarks from RAW UN-FLIPPED frame
+        candidates, landmarks = self.landmark_extractor.extract_candidates_from_image(frame)
         
-        # Also get FULL face mesh for advanced visualization (468 points)
-        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        full_face_results = self.landmark_extractor.face_mesh.process(image_rgb) if self.landmark_extractor.detect_face else None
+        # Face mesh visualization only if detect_face is enabled
+        full_face_results = None
+        if self.landmark_extractor.detect_face and self.landmark_extractor.face_mesh is not None:
+            image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            full_face_results = self.landmark_extractor.face_mesh.process(image_rgb)
         
         prediction_text = ""
         confidence = 0.0
         
-        if landmarks is not None:
-            # Normalize landmarks
-            normalized = self.landmark_extractor.normalize_landmarks(landmarks)
+        if candidates:
+            pred_idx, conf = self.predict_gesture(candidates)
+            min_thresh = self.config.get('detection', 'confidence_threshold', default=0.6)
             
-            # Predict
-            pred_idx, conf = self.predict_gesture(normalized)
-            
-            if pred_idx is not None and conf > self.config.get('detection', 'confidence_threshold', default=0.85):
+            if pred_idx is not None and conf >= min_thresh:
                 prediction_text = self.class_names[pred_idx]
                 confidence = conf
                 
@@ -207,6 +234,8 @@ class ISLInference:
                 else:
                     # Manual mode - just update last prediction
                     self.last_prediction = prediction_text
+        else:
+            self.smoother.clear()
         
         # Prepare display frame
         if mirror_display:
@@ -494,6 +523,7 @@ class ISLInference:
         self.detected_words = []
         self.landmark_sequence.clear()
         self.prediction_buffer.clear()
+        self.smoother.clear()
         self.last_prediction = None
         self.hold_counter = 0
     

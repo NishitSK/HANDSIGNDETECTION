@@ -57,7 +57,7 @@ class TTSEngine:
             if voices and len(voices) > self.voice_index:
                 self.engine.setProperty('voice', voices[self.voice_index].id)
             
-            print(f"✓ pyttsx3 TTS engine initialized")
+            print(f"[OK] pyttsx3 TTS engine initialized")
             print(f"  Rate: {self.rate} WPM")
             print(f"  Volume: {self.volume}")
             print(f"  Available voices: {len(voices) if voices else 0}")
@@ -76,7 +76,7 @@ class TTSEngine:
             pygame.mixer.init()
             self.pygame = pygame
             
-            print(f"✓ gTTS engine initialized")
+            print(f"[OK] gTTS engine initialized")
         except ImportError as e:
             print(f"Error: {e}")
             print("Please install: pip install gtts pygame")

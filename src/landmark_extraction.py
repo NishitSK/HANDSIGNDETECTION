@@ -18,7 +18,7 @@ class LandmarkExtractor:
     
     def __init__(self, static_mode=False, max_hands=2, 
                  min_detection_confidence=0.7, min_tracking_confidence=0.5,
-                 detect_face=True):
+                 detect_face=False):
         """
         Initialize MediaPipe hands and face mesh
         
@@ -27,7 +27,7 @@ class LandmarkExtractor:
             max_hands: Maximum number of hands to detect (2 for both hands)
             min_detection_confidence: Minimum confidence for detection
             min_tracking_confidence: Minimum confidence for tracking
-            detect_face: Whether to detect face landmarks
+            detect_face: Whether to detect face landmarks (default False)
         """
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
@@ -40,6 +40,7 @@ class LandmarkExtractor:
         
         # Initialize face mesh if needed
         self.detect_face = detect_face
+        self.face_mesh = None
         if detect_face:
             self.mp_face_mesh = mp.solutions.face_mesh
             self.face_mesh = self.mp_face_mesh.FaceMesh(
@@ -236,18 +237,136 @@ class LandmarkExtractor:
 
     @staticmethod
     def _normalize_single_frame(landmarks):
-        """Normalize a single frame of landmarks"""
-        # Center at wrist (landmark 0)
-        centered = landmarks - landmarks[0]
-        
-        # Scale based on hand size (distance from wrist to middle finger tip)
-        hand_size = np.linalg.norm(centered[12] - centered[0])
-        if hand_size > 0:
-            normalized = centered / hand_size
+        """Normalize a single frame of landmarks with anchor detection"""
+        # Determine anchor wrist: prefer left wrist (index 0) if non-zero, else right wrist (index 21)
+        if np.any(landmarks[0]):
+            wrist = landmarks[0]
+            ref_tip = landmarks[12]
+        elif len(landmarks) > 21 and np.any(landmarks[21]):
+            wrist = landmarks[21]
+            ref_tip = landmarks[33]
         else:
-            normalized = centered
+            return landmarks
+
+        centered = landmarks.copy()
+        num_hand_pts = min(42, len(centered))
+        centered[:num_hand_pts] = centered[:num_hand_pts] - wrist
         
-        return normalized
+        # Scale based on hand size
+        hand_size = np.linalg.norm(ref_tip - wrist)
+        if hand_size > 1e-4:
+            centered[:num_hand_pts] = centered[:num_hand_pts] / hand_size
+        
+        return centered
+
+    def extract_candidates_from_image(self, image):
+        """
+        Extract hand & face landmarks and build canonical invariant candidate configurations.
+        Returns:
+            candidates: list of (62, 3) arrays ready for model inference
+            display_landmarks: (62, 3) combined array for drawing on frame
+        """
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        hand_results = self.hands.process(image_rgb)
+        
+        face_landmarks = np.zeros((20, 3), dtype=np.float32)
+        if self.detect_face:
+            face_results = self.face_mesh.process(image_rgb)
+            if face_results and face_results.multi_face_landmarks:
+                face_data = face_results.multi_face_landmarks[0]
+                key_indices = [10, 152, 234, 454, 4, 1, 33, 263, 61, 291, 199, 6, 168, 8, 9, 151, 337, 299, 69, 104]
+                face_landmarks = np.array([[face_data.landmark[idx].x,
+                                            face_data.landmark[idx].y,
+                                            face_data.landmark[idx].z] for idx in key_indices], dtype=np.float32)
+        
+        if not hand_results or not hand_results.multi_hand_landmarks:
+            return [], None
+            
+        hands = [np.array([[p.x, p.y, p.z] for p in hl.landmark], dtype=np.float32) for hl in hand_results.multi_hand_landmarks]
+        handedness = hand_results.multi_handedness or []
+        
+        candidates = []
+        
+        if len(hands) == 1:
+            hand = hands[0]
+            wrist = hand[0]
+            mcp = hand[9]
+            cur_palm = float(np.linalg.norm(mcp - wrist))
+            scale = (0.423 / cur_palm) if cur_palm > 1e-4 else 1.0
+            
+            # Candidate 1: Natural orientation aligned to canonical position in right slot
+            c1 = np.zeros((62, 3), dtype=np.float32)
+            c1[21:42, 0] = (hand[:, 0] - wrist[0]) * scale + 0.76442
+            c1[21:42, 1] = (hand[:, 1] - wrist[1]) * scale + 0.78281
+            c1[21:42, 2] = (hand[:, 2] - wrist[2]) * scale
+            c1[42:62] = face_landmarks
+            candidates.append(c1)
+            
+            # Candidate 2: Rotation-corrected to canonical upright inward angle (~105 deg)
+            TARGET_ANGLE = (105.0 * np.pi) / 180.0
+            cur_angle = float(np.arctan2(-(mcp[1] - wrist[1]), mcp[0] - wrist[0]))
+            d_theta = TARGET_ANGLE - cur_angle
+            cos_t = float(np.cos(d_theta))
+            sin_t = float(np.sin(d_theta))
+            dx = hand[:, 0] - wrist[0]
+            dy = hand[:, 1] - wrist[1]
+            c2 = np.zeros((62, 3), dtype=np.float32)
+            c2[21:42, 0] = (dx * cos_t + dy * sin_t) * scale + 0.76442
+            c2[21:42, 1] = (-dx * sin_t + dy * cos_t) * scale + 0.78281
+            c2[21:42, 2] = (hand[:, 2] - wrist[2]) * scale
+            c2[42:62] = face_landmarks
+            candidates.append(c2)
+            
+            # Candidate 3: Left slot candidate for left-handed single-hand gestures
+            c3 = np.zeros((62, 3), dtype=np.float32)
+            c3[0:21, 0] = (hand[:, 0] - wrist[0]) * scale + 0.76442
+            c3[0:21, 1] = (hand[:, 1] - wrist[1]) * scale + 0.78281
+            c3[0:21, 2] = (hand[:, 2] - wrist[2]) * scale
+            c3[42:62] = face_landmarks
+            candidates.append(c3)
+            
+            # Candidate 4: Standard normalized single hand (right slot)
+            c4 = np.zeros((62, 3), dtype=np.float32)
+            c4[21:42] = hand
+            c4[42:62] = face_landmarks
+            candidates.append(self._normalize_single_frame(c4))
+
+            # Candidate 5: Standard normalized single hand (left slot)
+            c5 = np.zeros((62, 3), dtype=np.float32)
+            c5[0:21] = hand
+            c5[42:62] = face_landmarks
+            candidates.append(self._normalize_single_frame(c5))
+            
+            display_landmarks = np.zeros((62, 3), dtype=np.float32)
+            # Determine display slot matching MediaPipe handedness
+            label = handedness[0].classification[0].label if handedness and handedness[0].classification else 'Right'
+            if label == 'Left':
+                display_landmarks[0:21] = hand
+            else:
+                display_landmarks[21:42] = hand
+            display_landmarks[42:62] = face_landmarks
+        else:
+            # Two hands
+            left_hand = np.zeros((21, 3), dtype=np.float32)
+            right_hand = np.zeros((21, 3), dtype=np.float32)
+            for h, hd in zip(hands, handedness):
+                label = hd.classification[0].label if hd.classification else 'Left'
+                if label == 'Left':
+                    left_hand = h
+                else:
+                    right_hand = h
+            
+            # Candidate 1: Standard mapping with canonical normalization
+            c_std = np.vstack([left_hand, right_hand, face_landmarks])
+            candidates.append(self._normalize_single_frame(c_std))
+            
+            # Candidate 2: Inverted mapping (for crossed or switched hands)
+            c_inv = np.vstack([right_hand, left_hand, face_landmarks])
+            candidates.append(self._normalize_single_frame(c_inv))
+            
+            display_landmarks = c_std
+            
+        return candidates, display_landmarks
     
     def flatten_landmarks(self, landmarks):
         """

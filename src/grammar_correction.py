@@ -17,22 +17,29 @@ class GrammarCorrector:
         Args:
             model_name: HuggingFace model name (T5, BART, etc.)
         """
-        print(f"Loading grammar correction model: {model_name}")
+        self.model_name = model_name
         self.model = None
         self.tokenizer = None
         self.torch = None
         self.device = "cpu"
+        self._model_loaded = False
 
+    def _load_ai_model(self):
+        """Lazy load AI model when explicitly requested"""
+        if self._model_loaded:
+            return
+        print(f"Loading grammar correction model: {self.model_name}")
         try:
             auto_tokenizer, auto_model, torch_module = self._load_model_dependencies()
-            self.tokenizer = auto_tokenizer.from_pretrained(model_name)
-            self.model = auto_model.from_pretrained(model_name)
+            self.tokenizer = auto_tokenizer.from_pretrained(self.model_name)
+            self.model = auto_model.from_pretrained(self.model_name)
             self.torch = torch_module
             self.device = "cuda" if self.torch.cuda.is_available() else "cpu"
             self.model.to(self.device)
-            print(f"✓ Model loaded successfully on {self.device}")
+            self._model_loaded = True
+            print(f"[OK] Model loaded successfully on {self.device}")
         except Exception as e:
-            print(f"Warning: Could not load model {model_name}: {e}")
+            print(f"Warning: Could not load model {self.model_name}: {e}")
             print("Falling back to rule-based grammar correction")
 
     def _load_model_dependencies(self):
@@ -60,10 +67,12 @@ class GrammarCorrector:
         
         # For ISL, rule-based is more reliable than AI model
         # AI models tend to be too creative and add unwanted words
-        if use_model and self.model and self.tokenizer:
-            return self._model_based_correction(word_sequence, temperature, max_length)
-        else:
-            return self._rule_based_correction(word_sequence)
+        if use_model:
+            if not self._model_loaded:
+                self._load_ai_model()
+            if self.model and self.tokenizer:
+                return self._model_based_correction(word_sequence, temperature, max_length)
+        return self._rule_based_correction(word_sequence)
     
     def _model_based_correction(self, text, temperature, max_length):
         """Model-based grammar correction using transformers"""

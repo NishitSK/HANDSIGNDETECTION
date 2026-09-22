@@ -14,6 +14,7 @@ data:
   train_test_split: 0.8
 detection:
   confidence_threshold: 0.6
+  detect_face: false
   fps_target: 30
   gesture_hold_frames: 10
   min_detection_confidence: 0.5

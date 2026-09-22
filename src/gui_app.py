@@ -78,19 +78,19 @@ class VideoThread(QThread):
             print(f"[ERROR] {e}")
             return
 
-        # Frame skipping to maintain high GUI responsiveness
+        # Frame skipping: 1 = process every frame for smooth non-flickering display
         self.frame_counter = 0
-        self.frame_skip = getattr(self, 'frame_skip', 2)  # process every Nth frame
+        self.frame_skip = getattr(self, 'frame_skip', 1)
         last_processed = None
+        last_prediction = None
+        last_confidence = 0.0
 
         while self.running:
             ret, frame = cap.read()
             if not ret:
                 continue
 
-            # CRITICAL FIX: Keep raw frame UN-FLIPPED for model inference!
-            # Training images were natural un-mirrored photos. Horizontal flipping
-            # inverts coordinates and swaps Left/Right hand slots, collapsing asymmetric letters.
+            # CRITICAL: Keep raw frame UN-FLIPPED for model inference
             raw_frame = frame
 
             # Run inference on un-flipped frame, with mirror_display applied to the returned visualization
@@ -100,18 +100,17 @@ class VideoThread(QThread):
                         raw_frame, mirror_display=self.mirror_display
                     )
                     last_processed = processed_frame
+                    last_prediction = prediction
+                    last_confidence = confidence
                 except Exception:
-                    # Fall back to display frame on error
                     processed_frame = cv2.flip(raw_frame, 1) if self.mirror_display else raw_frame.copy()
-                    prediction = None
-                    confidence = 0.0
+                    prediction = last_prediction
+                    confidence = last_confidence
             else:
-                if self.mirror_display:
-                    processed_frame = cv2.flip(raw_frame, 1)
-                else:
-                    processed_frame = raw_frame.copy()
-                prediction = None
-                confidence = 0.0
+                # Maintain last processed overlay so screen never flickers or drops HUD
+                processed_frame = last_processed.copy() if last_processed is not None else (cv2.flip(raw_frame, 1) if self.mirror_display else raw_frame.copy())
+                prediction = last_prediction
+                confidence = last_confidence
 
             # Scale processed frame back to display resolution if needed
             if processed_frame is None:
@@ -142,8 +141,7 @@ class VideoThread(QThread):
 
             # Emit signals for UI update
             self.change_pixmap_signal.emit(processed_frame)
-            if prediction:
-                self.prediction_signal.emit(prediction, confidence)
+            self.prediction_signal.emit(prediction if prediction else "", confidence if prediction else 0.0)
 
             self.frame_counter += 1
 
@@ -218,7 +216,7 @@ class ISLGUIApp(QMainWindow):
     
     def manual_capture(self):
         """Manually capture current gesture"""
-        if self.last_prediction and self.last_confidence > 0.7:
+        if self.last_prediction and self.last_confidence >= 0.55:
             # Add to sequence
             self.inference_engine.detected_words.append(self.last_prediction)
             
@@ -339,7 +337,7 @@ class ISLGUIApp(QMainWindow):
 
     def init_ui(self):
         """Initialize user interface"""
-        self.setWindowTitle("ISL Translation System v2.0 Pro - [Grammar | Hands+Face | Training]")
+        self.setWindowTitle("ISL Translation System v2.0 Pro - [Grammar | Real-time Hands | Tutor]")
 
         # Fit the window to the screen actually available rather than a fixed
         # 1600x950, which overflows smaller displays and clips the right-hand
@@ -1100,7 +1098,7 @@ class ISLGUIApp(QMainWindow):
         features_group.setMaximumHeight(120)
         features_layout = QVBoxLayout()
         
-        features_text = "✓ Both Hands\n✓ Face Mesh (478)\n✓ Grammar AI\n✓ Real-time TTS"
+        features_text = "✓ Real-time Hands Tracking\n✓ High-Speed Skeleton\n✓ Grammar AI\n✓ Real-time Voice TTS"
         features_label = QLabel(features_text)
         features_label.setFont(QFont('Arial', 8))
         features_label.setStyleSheet("color: #00ff00;")
@@ -1308,6 +1306,20 @@ class ISLGUIApp(QMainWindow):
     
     def update_prediction(self, prediction, confidence):
         """Update prediction display"""
+        if not prediction:
+            self.last_prediction = None
+            self.last_confidence = 0.0
+            self.current_sign_label.setText("No sign detected")
+            self.confidence_label.setText("Confidence: 0%")
+            self.confidence_bar.setValue(0)
+            if hasattr(self, 'tutor_match_status') and hasattr(self, 'current_tutor_letter'):
+                target = self.current_tutor_letter
+                self.tutor_match_status.setText(f"Form the sign for Letter {target}")
+                self.tutor_match_status.setStyleSheet(
+                    "color: #aaaaaa; padding: 6px; background: rgba(80, 80, 80, 0.15); border-radius: 6px;"
+                )
+            return
+
         # Store for manual mode
         self.last_prediction = prediction
         self.last_confidence = confidence
@@ -1326,21 +1338,16 @@ class ISLGUIApp(QMainWindow):
         # Update Tutor practice match indicator
         if hasattr(self, 'tutor_match_status') and hasattr(self, 'current_tutor_letter'):
             target = self.current_tutor_letter
-            if prediction == target and confidence >= 0.65:
+            if prediction == target and confidence >= 0.60:
                 self.tutor_match_status.setText(f"🎯 EXCELLENT! Matched '{prediction}' ({confidence:.1%})")
                 self.tutor_match_status.setStyleSheet(
                     "color: #00ff88; font-weight: bold; padding: 6px; "
                     "background: rgba(0, 255, 136, 0.25); border: 1px solid #00ff88; border-radius: 6px;"
                 )
-            elif prediction:
+            else:
                 self.tutor_match_status.setText(f"Target: {target} | Detected: {prediction} ({confidence:.0%})")
                 self.tutor_match_status.setStyleSheet(
                     "color: #ffaa00; padding: 6px; background: rgba(255, 170, 0, 0.15); border-radius: 6px;"
-                )
-            else:
-                self.tutor_match_status.setText(f"Form the sign for Letter {target}")
-                self.tutor_match_status.setStyleSheet(
-                    "color: #aaaaaa; padding: 6px; background: rgba(80, 80, 80, 0.15); border-radius: 6px;"
                 )
 
         # Update stats
