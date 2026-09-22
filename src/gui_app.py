@@ -1348,6 +1348,8 @@ class ISLGUIApp(QMainWindow):
     
     def toggle_recording(self):
         """Toggle recording"""
+        if not hasattr(self, 'record_btn'):
+            return
         if self.record_btn.isChecked():
             self.is_recording = True
             self.record_btn.setText("⏹️ Stop Recording")
@@ -1359,29 +1361,22 @@ class ISLGUIApp(QMainWindow):
             self.record_btn.setStyleSheet("")
             self.statusBar().showMessage('Recording stopped', 2000)
             
-            if self.recorded_frames:
+            if hasattr(self, 'recorded_frames') and self.recorded_frames:
                 self.save_recording()
-    
-    def save_recording(self):
-        """Save recorded video"""
-        filename, _ = QFileDialog.getSaveFileName(
-            self, "Save Recording", "", "Video Files (*.mp4)"
-        )
-        
-        if filename:
-            # Save video (implementation depends on requirements)
-            self.statusBar().showMessage(f'Recording saved to {filename}', 3000)
-            self.recorded_frames = []
     
     def update_statistics(self):
         """Update statistics display"""
         words_count = len(self.inference_engine.detected_words)
         sentences_count = self.translation_text.toPlainText().count('•')
         
-        stats_text = f"Signs: {words_count} | Sentences: {sentences_count} | "
-        stats_text += f"Accuracy: {self.inference_engine.prediction_confidence:.1%}"
-        
-        self.stats_label.setText(stats_text)
+        if hasattr(self, 'captures_label'):
+            self.captures_label.setText(f"📸 Total Captures: {words_count}")
+        if hasattr(self, 'sentences_label'):
+            self.sentences_label.setText(f"📝 Sentences Spoken: {sentences_count}")
+        if hasattr(self, 'stats_label'):
+            stats_text = f"Signs: {words_count} | Sentences: {sentences_count} | "
+            stats_text += f"Accuracy: {self.inference_engine.prediction_confidence:.1%}"
+            self.stats_label.setText(stats_text)
     
     def on_class_name_changed(self, text):
         """Handle class name input change"""

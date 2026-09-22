@@ -46,17 +46,33 @@ class ISLGestureModel:
         """
         model_config = self.config['model'] if isinstance(self.config, dict) else self.config.config['model']
 
-        hidden_units = model_config.get('hidden_units', 128)
-        dropout = model_config.get('dropout', 0.3)
+        hidden_units = model_config.get('hidden_units', 384)
+        dropout = model_config.get('dropout', 0.2)
         learning_rate = model_config.get('learning_rate', 0.001)
 
         inputs = keras.Input(shape=input_shape, name='landmark_frame')
         x = layers.Flatten()(inputs)
 
-        for i, units in enumerate([hidden_units, hidden_units // 2, hidden_units // 4]):
-            x = layers.Dense(units, activation='relu', name=f'dense_{i+1}')(x)
-            x = layers.BatchNormalization()(x)
-            x = layers.Dropout(dropout if i == 0 else dropout * 0.5)(x)
+        # Block 1
+        x = layers.Dense(hidden_units, activation='relu')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Dropout(dropout)(x)
+
+        # Block 2 with residual connection
+        res1 = x
+        x = layers.Dense(hidden_units, activation='relu')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Dropout(dropout)(x)
+        x = layers.Add()([x, res1])
+
+        # Block 3
+        x = layers.Dense(max(hidden_units // 2, 128), activation='relu')(x)
+        x = layers.BatchNormalization()(x)
+        x = layers.Dropout(dropout * 0.75)(x)
+
+        # Block 4
+        x = layers.Dense(max(hidden_units // 4, 64), activation='relu')(x)
+        x = layers.BatchNormalization()(x)
 
         outputs = layers.Dense(num_classes, activation='softmax', name='output')(x)
 
