@@ -49,6 +49,13 @@ def open_camera(camera_id=0, width=None, height=None, warmup_reads=5):
         if height:
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
+        # Eliminate DirectShow buffer queue latency and request 30 FPS stream
+        try:
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            cap.set(cv2.CAP_PROP_FPS, 30)
+        except Exception:
+            pass
+
         for _ in range(warmup_reads):
             ret, _frame = cap.read()
             if ret:

@@ -155,42 +155,142 @@ class VideoThread(QThread):
 
 ADAPTIVE_VIDEO_INSTRUCTIONS = {
     'J': {
-        'title': "Letter J — Adaptive Motion Gesture",
+        'title': "Letter J — Dynamic Tracing Gesture",
         'is_adaptive': True,
-        'badge': "🌊 ADAPTIVE MOTION SIGN (Sequence GRU Tracked)",
+        'badge': "🌊 DYNAMIC MOTION SIGN (99.39% GRU Tracked)",
         'steps': [
             ("Phase 1: Starting Anchor", "Hold non-dominant palm flat facing you with fingers upright. Poise dominant index fingertip touching the tip of non-dominant ring finger."),
             ("Phase 2: Downward Stroke", "Sweep dominant index finger straight downward across the length of the palm in a smooth, continuous vertical vector."),
             ("Phase 3: Curved Terminal Hook", "At the lower edge of the palm, hook fingertip smoothly outward and upward to the left, carving the distinct tail of 'J'."),
-            ("Phase 4: Adaptive GRU Detection", "The 99.39% GRU sequence model tracks this continuous 30-frame spatial-temporal curvature trajectory in real time.")
+            ("Phase 4: GRU Temporal Tracking", "The 99.39% GRU sequence model tracks this continuous 30-frame spatial-temporal curvature trajectory in real time.")
         ],
         'kinematic_tip': "Maintain steady finger speed. A 0.8-second motion arc delivers the highest recognition confidence in the GRU model."
     },
     'Z': {
-        'title': "Letter Z — Adaptive Motion Gesture",
+        'title': "Letter Z — Dynamic Zigzag Gesture",
         'is_adaptive': True,
-        'badge': "🌊 ADAPTIVE MOTION SIGN (Sequence GRU Tracked)",
+        'badge': "🌊 DYNAMIC MOTION SIGN (99.39% GRU Tracked)",
         'steps': [
             ("Phase 1: Starting Anchor", "Hold non-dominant hand flat as a horizontal baseline. Poise dominant index finger extended at top-left (~15 cm in front of chest)."),
             ("Phase 2: Stroke 1 (Top Bar)", "Draw a crisp horizontal line from left to right (~12-15 cm across the camera frame)."),
             ("Phase 3: Stroke 2 (Diagonal Slash)", "Cut sharply diagonally downward and to the left at a 45° angle back to the vertical origin line."),
             ("Phase 4: Stroke 3 (Bottom Bar)", "Trace a final horizontal line from left to right along the bottom plane to complete the letter 'Z'."),
-            ("Phase 5: Adaptive GRU Detection", "The GRU recurrent network detects the distinct sharp inflection angles and velocities across all 30 frames.")
+            ("Phase 5: GRU Temporal Tracking", "The GRU recurrent network detects the distinct sharp inflection angles and velocities across all 30 frames.")
         ],
         'kinematic_tip': "Pause momentarily at each corner vertex to emphasize the directional angle changes for the temporal tracker."
+    },
+    'HELLO': {
+        'title': "Hello / Greeting — Lateral Waving Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Temple Anchor", "Raise dominant hand to right temple height, palm flat facing forward with fingers upright and relaxed."),
+            ("Phase 2: Lateral Waving Arc", "Sweep the hand smoothly side-to-side in a 12-15 cm horizontal waving motion across the camera frame."),
+            ("Phase 3: Rhythmic Oscillation", "Perform a continuous 2-cycle wave with steady hand velocity at eye/temple level."),
+            ("Phase 4: GRU Temporal Tracking", "The GRU sequence model detects the lateral hand oscillation, height anchor, and upright palm orientation.")
+        ],
+        'kinematic_tip': "Keep hand at forehead/temple height. A smooth double-wave triggers immediate high-confidence detection."
+    },
+    'THANK YOU': {
+        'title': "Thank You — Forward Sweeping Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Chin / Lip Anchor", "Touch the fingertips of your dominant flat hand gently to your chin or lips, palm facing inward toward your face."),
+            ("Phase 2: Forward Outward Glide", "Sweep your hand smoothly forward and slightly downward away from your chin toward the camera."),
+            ("Phase 3: Open Offering Posture", "End with palm facing upward/forward at mid-chest level in a relaxed, open offering stance."),
+            ("Phase 4: GRU Temporal Tracking", "The GRU network captures the forward depth vector (Z/Y displacement) and finger extension posture.")
+        ],
+        'kinematic_tip': "Ensure a decisive forward sweep away from the chin towards the camera for instantaneous classification."
+    },
+    'PLEASE': {
+        'title': "Please — Circular Chest Rub Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Heart Anchor", "Place the flat palm of your dominant hand over the center of your chest (sternum/heart level) with fingers angled slightly upward."),
+            ("Phase 2: Clockwise Circular Orbit", "Rub your palm in smooth, continuous clockwise circles across your chest (~12 cm diameter)."),
+            ("Phase 3: Consistent Contact", "Maintain gentle planar contact with the chest throughout the circular trajectory."),
+            ("Phase 4: GRU Temporal Tracking", "The recurrent network matches the continuous circular orbital velocity and planar flat hand posture.")
+        ],
+        'kinematic_tip': "Keep all fingers extended and together flat against the chest plane rather than curving your fingers."
+    },
+    'YES': {
+        'title': "Yes — Affirmative Fist Nodding Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Fist Orientation", "Form a closed fist with dominant hand held at mid-chest height, knuckle plane facing the camera."),
+            ("Phase 2: Downward Wrist Nod", "Nod the fist downward at the wrist joint, mimicking a head nodding 'yes'."),
+            ("Phase 3: Rhythmic Bounce", "Tilt the fist back up and perform 2-3 rhythmic vertical nods with consistent cadence."),
+            ("Phase 4: GRU Temporal Tracking", "The GRU temporal cells capture the vertical harmonic pitch oscillations of the wrist and knuckles.")
+        ],
+        'kinematic_tip': "Pivot primarily at the wrist joint rather than moving your entire arm up and down."
+    },
+    'NO': {
+        'title': "No — Decisive Beak Snap Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Open Beak Posture", "Extend dominant thumb, index, and middle fingers together, held 4-5 cm apart like an open beak."),
+            ("Phase 2: Rapid Closing Snap", "Snap index and middle fingertips sharply downward to pinch firmly against the thumb tip."),
+            ("Phase 3: Rhythmic Repeat", "Slightly release and snap closed once more in a crisp, decisive negation cadence."),
+            ("Phase 4: GRU Temporal Tracking", "The model detects the rapid finger-convergence velocity and ring/pinky curled retraction.")
+        ],
+        'kinematic_tip': "Keep ring and pinky fingers tightly curled against palm to highlight the index-middle-thumb convergence."
+    },
+    'HELP': {
+        'title': "Help — Dual-Hand Tandem Lift Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Base Palm Support", "Hold non-dominant hand flat, palm facing upward, at lower chest height (~20 cm from body)."),
+            ("Phase 2: Thumbs-Up Placement", "Form a thumbs-up fist with dominant hand and place the bottom of the fist directly onto the flat palm."),
+            ("Phase 3: Tandem Upward Lift", "Lift both hands together smoothly upward by 12-15 cm in a synchronized rescue motion."),
+            ("Phase 4: GRU Temporal Tracking", "The GRU network verifies bilateral hand proximity and synchronized upward translation.")
+        ],
+        'kinematic_tip': "Keep both hands in steady contact throughout the upward lifting stroke."
+    },
+    'GOOD': {
+        'title': "Good / Fine — Chin-to-Palm Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Chin Touch", "Touch the fingertips of your dominant flat hand to your chin while resting non-dominant open palm facing up below."),
+            ("Phase 2: Downward Descent", "Bring dominant hand forward and downward in a steady diagonal trajectory."),
+            ("Phase 3: Palm Landing", "Land the back or palm of the dominant hand cleanly into the open non-dominant flat palm."),
+            ("Phase 4: GRU Temporal Tracking", "Tracks sequential hand-to-face release followed by bilateral hand convergence.")
+        ],
+        'kinematic_tip': "A crisp landing of the dominant hand onto the non-dominant palm ensures instant classification."
+    },
+    'NAMASTE': {
+        'title': "Namaste / Greeting — Symmetrical Prayer Gesture",
+        'is_adaptive': True,
+        'badge': "🌊 CONVERSATIONAL GESTURE (100% GRU Tracked)",
+        'steps': [
+            ("Phase 1: Lateral Preparation", "Bring both hands upward in front of chest, palms facing inward toward each other."),
+            ("Phase 2: Centered Convergence", "Press palms and all 10 fingers flat against each other along the body's vertical midline."),
+            ("Phase 3: Heart Posture Hold", "Hold the symmetrical prayer hands upright at chest level with fingers pointing upward."),
+            ("Phase 4: GRU Temporal Tracking", "The model detects bilateral palm symmetry, zero lateral velocity, and vertical finger alignment.")
+        ],
+        'kinematic_tip': "Keep forearms horizontal and elbows relaxed for a clean symmetrical posture."
     }
 }
+
+COMMON_GESTURE_NAMES = [
+    'HELLO', 'THANK YOU', 'PLEASE', 'YES', 'NO', 'HELP', 'GOOD', 'NAMASTE'
+]
 
 
 class MotionVideoGuideCanvas(QWidget):
     """
-    Animated video trajectory guide widget for dynamic and adaptive ISL signs.
+    State-of-the-art interactive animated video trajectory guide widget.
     Simulates a high-frame-rate motion video instruction showing trajectory,
-    directional vectors, keyframe waypoints, and animated hand contact beacons.
+    directional vectors, keyframe waypoints, animated hand beacons, and gesture blueprints.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(220, 160)
+        self.setFixedSize(360, 260)
         self.letter = 'J'
         self.is_playing = True
         self.speed = 1.0  # 1.0x or 0.5x
@@ -203,7 +303,10 @@ class MotionVideoGuideCanvas(QWidget):
         self.timer.start(33)
 
     def setLetter(self, letter):
-        self.letter = str(letter).upper()
+        self.setSign(letter)
+
+    def setSign(self, sign):
+        self.letter = str(sign).upper()
         self.t = 0.0
         self.trail.clear()
         self.update()
@@ -240,13 +343,13 @@ class MotionVideoGuideCanvas(QWidget):
             if t_clamped <= 0.60:
                 u = t_clamped / 0.60
                 x = 0.58 * w
-                y = (0.20 + u * (0.64 - 0.20)) * h
+                y = (0.22 + u * (0.64 - 0.22)) * h
             else:
                 u = (t_clamped - 0.60) / 0.40
                 p0 = np.array([0.58 * w, 0.64 * h])
                 p1 = np.array([0.58 * w, 0.88 * h])
-                p2 = np.array([0.36 * w, 0.88 * h])
-                p3 = np.array([0.26 * w, 0.68 * h])
+                p2 = np.array([0.34 * w, 0.88 * h])
+                p3 = np.array([0.24 * w, 0.68 * h])
                 pt = (1 - u)**3 * p0 + 3 * (1 - u)**2 * u * p1 + 3 * (1 - u) * u**2 * p2 + u**3 * p3
                 x, y = pt[0], pt[1]
             return x, y
@@ -255,19 +358,74 @@ class MotionVideoGuideCanvas(QWidget):
             if t_clamped <= 0.33:
                 u = t_clamped / 0.33
                 x = (0.25 + u * 0.50) * w
-                y = 0.25 * h
+                y = 0.26 * h
             elif t_clamped <= 0.66:
                 u = (t_clamped - 0.33) / 0.33
                 x = (0.75 - u * 0.50) * w
-                y = (0.25 + u * 0.50) * h
+                y = (0.26 + u * 0.48) * h
             else:
                 u = (t_clamped - 0.66) / 0.34
                 x = (0.25 + u * 0.50) * w
-                y = 0.75 * h
+                y = 0.74 * h
+            return x, y
+
+        elif self.letter == 'HELLO':
+            wave = np.sin(t_clamped * 4 * np.pi)
+            x = (0.50 + wave * 0.24) * w
+            y = (0.34 + np.sin(t_clamped * 2 * np.pi) * 0.04) * h
+            return x, y
+
+        elif self.letter == 'THANK YOU':
+            # Starts at chin, sweeps forward and down
+            x = (0.50 + 0.08 * t_clamped) * w
+            y = (0.30 + 0.44 * t_clamped) * h
+            return x, y
+
+        elif self.letter == 'PLEASE':
+            # Circular chest rubbing orbit
+            angle = t_clamped * 3.5 * np.pi
+            x = (0.50 + 0.22 * np.cos(angle)) * w
+            y = (0.52 + 0.22 * np.sin(angle)) * h
+            return x, y
+
+        elif self.letter == 'YES':
+            # Fist nodding up and down at wrist
+            nod = np.abs(np.sin(t_clamped * 4 * np.pi))
+            x = 0.50 * w
+            y = (0.36 + 0.32 * nod) * h
+            return x, y
+
+        elif self.letter == 'NO':
+            # Index/middle finger closing snap onto thumb
+            snap = 0.5 + 0.5 * np.cos(t_clamped * 4 * np.pi)
+            x = (0.50 + 0.16 * snap) * w
+            y = (0.45 + 0.16 * (1.0 - snap)) * h
+            return x, y
+
+        elif self.letter == 'HELP':
+            # Tandem upward lift
+            x = 0.50 * w
+            y = (0.76 - 0.44 * t_clamped) * h
+            return x, y
+
+        elif self.letter == 'GOOD':
+            if t_clamped <= 0.35:
+                x = 0.50 * w
+                y = 0.30 * h
+            else:
+                u = (t_clamped - 0.35) / 0.65
+                x = 0.50 * w
+                y = (0.30 + u * 0.44) * h
+            return x, y
+
+        elif self.letter == 'NAMASTE':
+            converge = min(1.0, t_clamped * 1.5)
+            x = (0.28 + converge * 0.22) * w
+            y = 0.52 * h
             return x, y
 
         else:
-            # Static signs: Pulsing anchor
+            # Static sign alignment target
             x = 0.50 * w
             y = 0.50 * h
             return x, y
@@ -279,170 +437,329 @@ class MotionVideoGuideCanvas(QWidget):
         w = self.width()
         h = self.height()
 
-        # Canvas background (dark obsidian matching UI)
-        painter.setBrush(QBrush(QColor(5, 11, 28)))
-        painter.setPen(QPen(QColor(38, 56, 106), 1.5))
-        painter.drawRoundedRect(0, 0, w, h, 10, 10)
+        # Canvas background (sleek gradient matching mobile design tokens)
+        bg_grad = QLinearGradient(0, 0, w, h)
+        bg_grad.setColorAt(0.0, QColor(7, 16, 38))
+        bg_grad.setColorAt(1.0, QColor(13, 27, 62))
+        painter.setBrush(QBrush(bg_grad))
+        painter.setPen(QPen(QColor(38, 56, 106), 2))
+        painter.drawRoundedRect(0, 0, w, h, 14, 14)
 
         # Subtle coordinate grid
-        grid_pen = QPen(QColor(15, 28, 64), 1, Qt.DotLine)
+        grid_pen = QPen(QColor(22, 38, 82, 110), 1, Qt.DotLine)
         painter.setPen(grid_pen)
-        for gx in range(30, w, 40):
+        for gx in range(40, w, 40):
             painter.drawLine(gx, 0, gx, h)
-        for gy in range(25, h, 35):
+        for gy in range(35, h, 35):
             painter.drawLine(0, gy, w, gy)
 
         # Video instruction watermark
-        painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
-        painter.setPen(QPen(QColor(86, 100, 140)))
-        mode_tag = "MOTION VIDEO (GRU)" if self.letter in ('J', 'Z') else "STATIC POSE GUIDE"
-        painter.drawText(8, 16, f"● {mode_tag}")
+        painter.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        painter.setPen(QPen(QColor(147, 161, 198)))
+        is_dynamic = (self.letter in ('J', 'Z') or self.letter in COMMON_GESTURE_NAMES)
+        mode_tag = "MOTION VIDEO GUIDE (GRU)" if is_dynamic else "STATIC HANDSHAPE GUIDE"
+        painter.drawText(14, 22, f"● {mode_tag}")
         pct = int(min(1.0, self.t) * 100)
         speed_lbl = f"{self.speed:.1f}x"
-        painter.drawText(w - 75, 16, f"{pct}% | {speed_lbl}")
+        painter.drawText(w - 95, 22, f"{pct}% | {speed_lbl}")
 
+        # Vector blueprints for each gesture
         if self.letter == 'J':
-            # Draw Palm reference silhouette
-            palm_pen = QPen(QColor(25, 42, 85), 1.5, Qt.DashLine)
+            # Palm reference silhouette
+            palm_pen = QPen(QColor(38, 56, 106), 1.5, Qt.DashLine)
             painter.setPen(palm_pen)
-            painter.setBrush(Qt.NoBrush)
-            painter.drawRoundedRect(int(w * 0.42), int(h * 0.22), int(w * 0.38), int(h * 0.60), 8, 8)
-            painter.drawText(int(w * 0.46), int(h * 0.52), "PALM")
+            painter.setBrush(QBrush(QColor(11, 22, 51, 160)))
+            painter.drawRoundedRect(int(w * 0.44), int(h * 0.22), int(w * 0.32), int(h * 0.58), 10, 10)
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(86, 100, 140)))
+            painter.drawText(int(w * 0.50), int(h * 0.50), "PALM")
 
-            # Static trajectory path
+            # Trajectory path
             path = QPainterPath()
-            path.moveTo(w * 0.58, h * 0.20)
+            path.moveTo(w * 0.58, h * 0.22)
             path.lineTo(w * 0.58, h * 0.64)
-            path.cubicTo(w * 0.58, h * 0.88, w * 0.36, h * 0.88, w * 0.26, h * 0.68)
-            painter.setPen(QPen(QColor(63, 178, 255, 90), 3, Qt.DashLine))
+            path.cubicTo(w * 0.58, h * 0.88, w * 0.34, h * 0.88, w * 0.24, h * 0.68)
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
             painter.drawPath(path)
 
             # Waypoint markers
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QBrush(QColor(63, 178, 255)))
-            painter.drawEllipse(QPointF(w * 0.58, h * 0.20), 4, 4)
-            painter.drawEllipse(QPointF(w * 0.26, h * 0.68), 4, 4)
-
-            painter.setFont(QFont('Segoe UI', 7, QFont.Bold))
-            painter.setPen(QPen(QColor(147, 161, 198)))
-            painter.drawText(int(w * 0.62), int(h * 0.22), "1. Start")
-            painter.drawText(int(w * 0.12), int(h * 0.68), "2. Hook")
+            for pt, lbl in [((w * 0.58, h * 0.22), "1. Start Anchor"), ((w * 0.58, h * 0.64), "2. Glide Down"), ((w * 0.24, h * 0.68), "3. Hook Up")]:
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QBrush(QColor(63, 178, 255)))
+                painter.drawEllipse(QPointF(pt[0], pt[1]), 5, 5)
+                painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+                painter.setPen(QPen(QColor(244, 246, 251)))
+                painter.drawText(int(pt[0] + 8), int(pt[1] + 4), lbl)
 
         elif self.letter == 'Z':
-            # Static trajectory lines
-            painter.setPen(QPen(QColor(63, 178, 255, 90), 3, Qt.DashLine))
-            painter.drawLine(int(w * 0.25), int(h * 0.25), int(w * 0.75), int(h * 0.25))
-            painter.drawLine(int(w * 0.75), int(h * 0.25), int(w * 0.25), int(h * 0.75))
-            painter.drawLine(int(w * 0.25), int(h * 0.75), int(w * 0.75), int(h * 0.75))
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawLine(int(w * 0.25), int(h * 0.26), int(w * 0.75), int(h * 0.26))
+            painter.drawLine(int(w * 0.75), int(h * 0.26), int(w * 0.25), int(h * 0.74))
+            painter.drawLine(int(w * 0.25), int(h * 0.74), int(w * 0.75), int(h * 0.74))
 
-            # Waypoints 1, 2, 3, 4
             pts = [
-                (w * 0.25, h * 0.25, "1"), (w * 0.75, h * 0.25, "2"),
-                (w * 0.25, h * 0.75, "3"), (w * 0.75, h * 0.75, "4")
+                (w * 0.25, h * 0.26, "1. Top Bar"), (w * 0.75, h * 0.26, "2. Turn"),
+                (w * 0.25, h * 0.74, "3. Diagonal Cut"), (w * 0.75, h * 0.74, "4. Bottom Base")
             ]
-            painter.setFont(QFont('Segoe UI', 7, QFont.Bold))
             for px, py, tag in pts:
                 painter.setPen(Qt.NoPen)
                 painter.setBrush(QBrush(QColor(63, 178, 255)))
-                painter.drawEllipse(QPointF(px, py), 4, 4)
-                painter.setPen(QPen(QColor(147, 161, 198)))
-                painter.drawText(int(px - 10 if px > w * 0.5 else px + 6), int(py - 4), tag)
+                painter.drawEllipse(QPointF(px, py), 5, 5)
+                painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+                painter.setPen(QPen(QColor(244, 246, 251)))
+                painter.drawText(int(px - 65 if px > w * 0.5 else px + 8), int(py - 6), tag)
+
+        elif self.letter == 'HELLO':
+            # Head/Temple reference box
+            painter.setPen(QPen(QColor(38, 56, 106), 1.5, Qt.DashLine))
+            painter.setBrush(QBrush(QColor(11, 22, 51, 140)))
+            painter.drawRoundedRect(int(w * 0.38), int(h * 0.20), int(w * 0.24), int(h * 0.32), 12, 12)
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(86, 100, 140)))
+            painter.drawText(int(w * 0.42), int(h * 0.37), "TEMPLE")
+
+            # Waving arc trajectory
+            wave_path = QPainterPath()
+            wave_path.moveTo(w * 0.26, h * 0.34)
+            for step_x in range(int(w * 0.26), int(w * 0.74), 4):
+                u = (step_x - w * 0.26) / (w * 0.48)
+                wy = (0.34 + np.sin(u * 4 * np.pi) * 0.04) * h
+                wave_path.lineTo(step_x, wy)
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawPath(wave_path)
+
+            # Waving ripple rings
+            for r_i in range(3):
+                ring_r = 16 + r_i * 12
+                painter.setPen(QPen(QColor(63, 178, 255, 60 - r_i * 18), 2))
+                painter.drawArc(int(w * 0.74 - ring_r), int(h * 0.34 - ring_r), ring_r * 2, ring_r * 2, -45 * 16, 90 * 16)
+
+        elif self.letter == 'THANK YOU':
+            # Chin anchor silhouette
+            painter.setPen(QPen(QColor(38, 56, 106), 1.5, Qt.DashLine))
+            painter.setBrush(QBrush(QColor(11, 22, 51, 140)))
+            painter.drawEllipse(int(w * 0.42), int(h * 0.18), int(w * 0.16), int(h * 0.20))
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(86, 100, 140)))
+            painter.drawText(int(w * 0.45), int(h * 0.29), "CHIN")
+
+            # Forward sweeping cone and arrow
+            sweep_path = QPainterPath()
+            sweep_path.moveTo(w * 0.50, h * 0.30)
+            sweep_path.lineTo(w * 0.58, h * 0.74)
+            painter.setPen(QPen(QColor(63, 178, 255, 130), 4, Qt.DashLine))
+            painter.drawPath(sweep_path)
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(QColor(63, 178, 255)))
+            painter.drawEllipse(QPointF(w * 0.50, h * 0.30), 5, 5)
+            painter.drawEllipse(QPointF(w * 0.58, h * 0.74), 5, 5)
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(244, 246, 251)))
+            painter.drawText(int(w * 0.54), int(h * 0.32), "1. Chin Touch")
+            painter.drawText(int(w * 0.62), int(h * 0.76), "2. Forward Sweep")
+
+        elif self.letter == 'PLEASE':
+            # Chest outline
+            painter.setPen(QPen(QColor(38, 56, 106), 1.5, Qt.DashLine))
+            painter.setBrush(QBrush(QColor(11, 22, 51, 140)))
+            painter.drawRoundedRect(int(w * 0.28), int(h * 0.30), int(w * 0.44), int(h * 0.44), 16, 16)
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(86, 100, 140)))
+            painter.drawText(int(w * 0.45), int(h * 0.53), "CHEST")
+
+            # Orbital rubbing ring
+            orbit_r = w * 0.22
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawEllipse(QPointF(w * 0.50, h * 0.52), orbit_r, orbit_r)
+
+            # Circular rotation arrowheads
+            painter.setPen(QPen(QColor(255, 178, 63), 2))
+            painter.drawLine(int(w * 0.50 + orbit_r), int(h * 0.52), int(w * 0.50 + orbit_r - 8), int(h * 0.52 - 8))
+            painter.drawLine(int(w * 0.50 + orbit_r), int(h * 0.52), int(w * 0.50 + orbit_r + 8), int(h * 0.52 - 8))
+
+        elif self.letter == 'YES':
+            # Vertical nod trajectory line
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawLine(int(w * 0.50), int(h * 0.36), int(w * 0.50), int(h * 0.68))
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(QColor(63, 178, 255)))
+            painter.drawEllipse(QPointF(w * 0.50, h * 0.36), 5, 5)
+            painter.drawEllipse(QPointF(w * 0.50, h * 0.68), 5, 5)
+
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(244, 246, 251)))
+            painter.drawText(int(w * 0.54), int(h * 0.38), "Top Flexion")
+            painter.drawText(int(w * 0.54), int(h * 0.70), "Bottom Flexion (Nod)")
+
+        elif self.letter == 'NO':
+            # Snap pinch angle lines
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawLine(int(w * 0.40), int(h * 0.38), int(w * 0.50), int(h * 0.55))
+            painter.drawLine(int(w * 0.60), int(h * 0.38), int(w * 0.50), int(h * 0.55))
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(QColor(255, 178, 63)))
+            painter.drawEllipse(QPointF(w * 0.50, h * 0.55), 6, 6)
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(244, 246, 251)))
+            painter.drawText(int(w * 0.52), int(h * 0.58), "Snap Pinch Point")
+
+        elif self.letter == 'HELP':
+            # Non-dominant flat palm baseline
+            painter.setPen(QPen(QColor(63, 178, 255), 3))
+            painter.drawLine(int(w * 0.32), int(h * 0.76), int(w * 0.68), int(h * 0.76))
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(86, 100, 140)))
+            painter.drawText(int(w * 0.38), int(h * 0.82), "BASE FLAT PALM")
+
+            # Upward tandem lift arrows
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawLine(int(w * 0.50), int(h * 0.76), int(w * 0.50), int(h * 0.32))
+            painter.setPen(QPen(QColor(255, 178, 63), 3))
+            painter.drawLine(int(w * 0.50), int(h * 0.32), int(w * 0.46), int(h * 0.36))
+            painter.drawLine(int(w * 0.50), int(h * 0.32), int(w * 0.54), int(h * 0.36))
+
+        elif self.letter == 'GOOD':
+            # Chin to palm landing
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawLine(int(w * 0.50), int(h * 0.30), int(w * 0.50), int(h * 0.74))
+            painter.setPen(QPen(QColor(63, 178, 255), 3))
+            painter.drawLine(int(w * 0.35), int(h * 0.74), int(w * 0.65), int(h * 0.74))
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(244, 246, 251)))
+            painter.drawText(int(w * 0.54), int(h * 0.32), "1. Chin Touch")
+            painter.drawText(int(w * 0.54), int(h * 0.72), "2. Palm Landing")
+
+        elif self.letter == 'NAMASTE':
+            # Twin symmetrical convergence paths
+            painter.setPen(QPen(QColor(63, 178, 255, 120), 4, Qt.DashLine))
+            painter.drawLine(int(w * 0.28), int(h * 0.52), int(w * 0.50), int(h * 0.52))
+            painter.drawLine(int(w * 0.72), int(h * 0.52), int(w * 0.50), int(h * 0.52))
+
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QBrush(QColor(255, 178, 63)))
+            painter.drawEllipse(QPointF(w * 0.50, h * 0.52), 6, 6)
+            painter.setFont(QFont('Segoe UI', 8, QFont.Bold))
+            painter.setPen(QPen(QColor(244, 246, 251)))
+            painter.drawText(int(w * 0.44), int(h * 0.62), "CENTERLINE")
 
         else:
             # Static letters: pulsing concentric alignment rings
             cx = w * 0.50
             cy = h * 0.50
-            pulse_r = 16 + int(8 * np.sin(self.t * 6.28))
-            painter.setPen(QPen(QColor(255, 178, 63, 80), 2))
+            pulse_r = 22 + int(10 * np.sin(self.t * 6.28))
+            painter.setPen(QPen(QColor(255, 178, 63, 90), 2))
             painter.setBrush(Qt.NoBrush)
             painter.drawEllipse(QPointF(cx, cy), pulse_r, pulse_r)
-            painter.drawEllipse(QPointF(cx, cy), pulse_r + 14, pulse_r + 14)
-            painter.setFont(QFont('Segoe UI', 9, QFont.Bold))
+            painter.drawEllipse(QPointF(cx, cy), pulse_r + 18, pulse_r + 18)
+            painter.setFont(QFont('Segoe UI', 12, QFont.Bold))
             painter.setPen(QPen(QColor(244, 246, 251)))
-            painter.drawText(int(cx - 38), int(cy + 4), f"SIGN '{self.letter}'")
+            painter.drawText(int(cx - 48), int(cy + 6), f"SIGN '{self.letter}'")
 
-        # Current Animated Beacon
+        # Current Animated Beacon & Trajectory Trail
         cur_x, cur_y = self._get_coords(self.t)
         self.trail.append((cur_x, cur_y))
-        if len(self.trail) > 14:
+        if len(self.trail) > 18:
             self.trail.pop(0)
 
         # Draw fading neon trail
         for i, (tx, ty) in enumerate(self.trail[:-1]):
-            trail_alpha = int(180 * (i / float(len(self.trail))))
+            trail_alpha = int(220 * (i / float(len(self.trail))))
             painter.setPen(Qt.NoPen)
             painter.setBrush(QBrush(QColor(255, 178, 63, trail_alpha)))
-            rad = 2 + int(3 * (i / float(len(self.trail))))
+            rad = 3 + int(4 * (i / float(len(self.trail))))
             painter.drawEllipse(QPointF(tx, ty), rad, rad)
 
         # Draw lead golden beacon
-        glow = QRadialGradient(cur_x, cur_y, 16)
-        glow.setColorAt(0.0, QColor(255, 178, 63, 230))
+        glow = QRadialGradient(cur_x, cur_y, 20)
+        glow.setColorAt(0.0, QColor(255, 178, 63, 240))
         glow.setColorAt(0.5, QColor(255, 178, 63, 110))
         glow.setColorAt(1.0, QColor(255, 178, 63, 0))
         painter.setPen(Qt.NoPen)
         painter.setBrush(QBrush(glow))
-        painter.drawEllipse(QPointF(cur_x, cur_y), 16, 16)
+        painter.drawEllipse(QPointF(cur_x, cur_y), 20, 20)
 
         painter.setBrush(QBrush(QColor(255, 255, 255)))
-        painter.drawEllipse(QPointF(cur_x, cur_y), 3.5, 3.5)
+        painter.drawEllipse(QPointF(cur_x, cur_y), 4.5, 4.5)
 
-        # Phase label at bottom
-        painter.setFont(QFont('Segoe UI', 8))
-        painter.setPen(QPen(QColor(244, 246, 251)))
+        # Phase label at bottom banner
+        painter.setFont(QFont('Segoe UI', 9, QFont.Bold))
+        painter.setPen(QPen(QColor(255, 178, 63)))
         if self.letter == 'J':
             lbl = "Phase: Downward Sweep" if self.t <= 0.60 else "Phase: Curved Terminal Hook"
         elif self.letter == 'Z':
             if self.t <= 0.33:
-                lbl = "Phase: Stroke 1 (Top Bar)"
+                lbl = "Phase: Top Bar Glide"
             elif self.t <= 0.66:
-                lbl = "Phase: Stroke 2 (Diagonal Slash)"
+                lbl = "Phase: Diagonal Slash"
             else:
-                lbl = "Phase: Stroke 3 (Bottom Bar)"
+                lbl = "Phase: Bottom Base Bar"
+        elif self.letter == 'HELLO':
+            lbl = "Phase: Lateral Waving Arc"
+        elif self.letter == 'THANK YOU':
+            lbl = "Phase: Forward Sweeping Release"
+        elif self.letter == 'PLEASE':
+            lbl = "Phase: Circular Chest Orbit"
+        elif self.letter == 'YES':
+            lbl = "Phase: Downward Fist Nod"
+        elif self.letter == 'NO':
+            lbl = "Phase: Decisive Beak Snap"
+        elif self.letter == 'HELP':
+            lbl = "Phase: Tandem Upward Lift"
+        elif self.letter == 'GOOD':
+            lbl = "Phase: Chin to Palm Landing"
+        elif self.letter == 'NAMASTE':
+            lbl = "Phase: Symmetrical Convergence"
         else:
-            lbl = "Pose: Align hand steady"
-        painter.drawText(8, h - 8, lbl)
+            lbl = "Pose: Steady Alignment"
+        painter.drawText(14, h - 12, f"▶ {lbl}")
 
 
 class TutorDialog(QDialog):
-    """Sign Language Tutor Dialog with 3 Guide Modes: Photo, Skeleton & Motion Video Instructions"""
+    """Spacious, State-of-the-Art Sign Language Tutor & Video Studio"""
 
     def __init__(self, parent):
         super().__init__(parent)
         self.parent_app = parent
-        self.setWindowTitle("Sign Language Tutor")
-        self.setFixedWidth(540)
+        self.setWindowTitle("Sign Language Tutor Studio")
+        self.resize(860, 640)
+        self.setMinimumSize(800, 580)
         self.guide_style = getattr(self.parent_app, 'guide_style', 'photo')
+        self.current_category = "letters"  # "letters" or "gestures"
+
         self.setStyleSheet("""
             QDialog {
-                background-color: #14234b;
+                background-color: #0b1633;
                 color: #f4f6fb;
-                border-radius: 16px;
             }
             QLabel {
                 color: #f4f6fb;
                 font-family: 'Segoe UI', system-ui, sans-serif;
             }
             QPushButton.btn-nav {
-                background-color: #0b1633;
+                background-color: #14234b;
                 color: #f4f6fb;
                 border: 1px solid #26386a;
                 border-radius: 8px;
                 font-weight: bold;
-                padding: 6px 12px;
+                font-size: 13px;
+                padding: 6px 14px;
                 min-width: 36px;
             }
             QPushButton.btn-nav:hover {
                 background-color: #26386a;
+                border-color: #ffb23f;
             }
             QPushButton.btn-mode {
-                background-color: #0b1633;
+                background-color: #14234b;
                 color: #93a1c6;
                 border: 1px solid #26386a;
                 border-radius: 8px;
                 font-size: 11px;
                 font-weight: bold;
-                padding: 6px 10px;
+                padding: 6px 12px;
             }
             QPushButton.btn-mode:hover {
                 background-color: #26386a;
@@ -454,37 +771,61 @@ class TutorDialog(QDialog):
                 border: 1px solid #ffb23f;
                 border-radius: 8px;
                 font-size: 11px;
+                font-weight: 800;
+                padding: 6px 12px;
+            }
+            QPushButton.btn-cat {
+                background-color: #14234b;
+                color: #93a1c6;
+                border: 1px solid #26386a;
+                border-radius: 8px;
+                font-size: 12px;
                 font-weight: bold;
-                padding: 6px 10px;
+                padding: 7px 14px;
+            }
+            QPushButton.btn-cat:hover {
+                background-color: #26386a;
+                color: #f4f6fb;
+            }
+            QPushButton.btn-cat-active {
+                background-color: #26386a;
+                color: #ffb23f;
+                border: 1px solid #ffb23f;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 800;
+                padding: 7px 14px;
             }
             QPushButton.btn-vid-ctrl {
-                background-color: #0b1633;
+                background-color: #14234b;
                 color: #f4f6fb;
                 border: 1px solid #26386a;
                 border-radius: 6px;
-                font-size: 10px;
+                font-size: 11px;
                 font-weight: bold;
-                padding: 4px 8px;
+                padding: 6px 12px;
             }
             QPushButton.btn-vid-ctrl:hover {
                 background-color: #26386a;
+                border-color: #3fb2ff;
             }
             QComboBox {
-                background-color: #0b1633;
+                background-color: #14234b;
                 color: #f4f6fb;
                 border: 1px solid #26386a;
                 border-radius: 8px;
-                padding: 6px 12px;
+                padding: 6px 14px;
                 font-weight: bold;
+                font-size: 13px;
             }
             QCheckBox {
                 color: #f4f6fb;
-                font-size: 13px;
-                font-weight: 500;
+                font-size: 12px;
+                font-weight: 600;
             }
             QSlider::groove:horizontal {
                 height: 6px;
-                background: #0b1633;
+                background: #14234b;
                 border-radius: 3px;
             }
             QSlider::sub-page:horizontal {
@@ -501,91 +842,80 @@ class TutorDialog(QDialog):
         """)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(22, 18, 22, 20)
+        layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(12)
 
-        # Header
-        title = QLabel("SIGN LANGUAGE TUTOR & VIDEO INSTRUCTIONS")
-        title.setFont(QFont('Segoe UI', 14, QFont.Bold))
-        title.setStyleSheet("letter-spacing: 1px; color: #f4f6fb;")
-        layout.addWidget(title)
+        # Header Row
+        header_row = QHBoxLayout()
+        title_box = QVBoxLayout()
+        title = QLabel("SIGN LANGUAGE TUTOR & GESTURE STUDIO")
+        title.setFont(QFont('Segoe UI', 15, QFont.Bold))
+        title.setStyleSheet("letter-spacing: 1.5px; color: #f4f6fb;")
+        title_box.addWidget(title)
 
-        subtitle = QLabel("Practice handshapes with Photo, Skeleton, or Live Video Trajectory Instructions")
+        subtitle = QLabel("Interactive Practice with High-Res Photos, Skeletons, and Live Animated Video Guides")
         subtitle.setStyleSheet("color: #93a1c6; font-size: 11px;")
-        layout.addWidget(subtitle)
+        title_box.addWidget(subtitle)
+        header_row.addLayout(title_box)
+        header_row.addStretch()
 
-        # Guide Mode Selector (Photo / Skeleton / Motion Video)
-        mode_row = QHBoxLayout()
-        mode_row.setSpacing(6)
-        mode_lbl = QLabel("Guide Style:")
-        mode_lbl.setStyleSheet("color: #93a1c6; font-size: 11px; font-weight: bold;")
-        mode_row.addWidget(mode_lbl)
+        # Category Switcher Pills: [ 🔤 Alphabet A–Z ] [ 💬 Common Gestures ]
+        self.btn_cat_letters = QPushButton("🔤 Alphabet (A–Z)")
+        self.btn_cat_letters.clicked.connect(lambda: self.switch_category("letters"))
+        header_row.addWidget(self.btn_cat_letters)
+
+        self.btn_cat_gestures = QPushButton("💬 Common Gestures")
+        self.btn_cat_gestures.clicked.connect(lambda: self.switch_category("gestures"))
+        header_row.addWidget(self.btn_cat_gestures)
+
+        layout.addLayout(header_row)
+
+        # Main Studio Two-Column Layout
+        studio_row = QHBoxLayout()
+        studio_row.setSpacing(16)
+
+        # ============================================================
+        # LEFT COLUMN: VISUAL MEDIA STUDIO (370px width)
+        # ============================================================
+        left_studio = QFrame()
+        left_studio.setFixedWidth(380)
+        left_studio.setStyleSheet("background-color: #14234b; border: 1px solid #26386a; border-radius: 14px;")
+        left_layout = QVBoxLayout(left_studio)
+        left_layout.setContentsMargins(12, 12, 12, 12)
+        left_layout.setSpacing(10)
+
+        # Guide Style Pills row
+        style_row = QHBoxLayout()
+        style_lbl = QLabel("Guide Style:")
+        style_lbl.setStyleSheet("color: #93a1c6; font-size: 11px; font-weight: bold;")
+        style_row.addWidget(style_lbl)
 
         self.btn_photo = QPushButton("📷 Photo")
         self.btn_photo.clicked.connect(lambda: self.set_guide_mode('photo'))
-        mode_row.addWidget(self.btn_photo)
+        style_row.addWidget(self.btn_photo)
 
         self.btn_skel = QPushButton("🦴 Skeleton")
         self.btn_skel.clicked.connect(lambda: self.set_guide_mode('skeleton'))
-        mode_row.addWidget(self.btn_skel)
+        style_row.addWidget(self.btn_skel)
 
         self.btn_video = QPushButton("🎬 Motion Video")
         self.btn_video.clicked.connect(lambda: self.set_guide_mode('video'))
-        mode_row.addWidget(self.btn_video)
+        style_row.addWidget(self.btn_video)
+        left_layout.addLayout(style_row)
 
-        mode_row.addStretch()
-        layout.addLayout(mode_row)
-
-        # Main Tutor Card
-        card = QFrame()
-        card.setStyleSheet("background-color: #0b1633; border: 1px solid #26386a; border-radius: 12px;")
-        card_layout = QVBoxLayout()
-        card_layout.setContentsMargins(12, 12, 12, 12)
-        card_layout.setSpacing(10)
-
-        # Navigation and Letter selector row
-        nav_row = QHBoxLayout()
-        nav_row.setSpacing(6)
-
-        prev_btn = QPushButton("◀")
-        prev_btn.setProperty("class", "btn-nav")
-        prev_btn.clicked.connect(self.prev_letter)
-        nav_row.addWidget(prev_btn)
-
-        self.letter_combo = QComboBox()
-        for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-            suffix = " 🌊 [Motion]" if c in ('J', 'Z') else ""
-            self.letter_combo.addItem(f"Letter {c}{suffix}", c)
-        self.letter_combo.currentIndexChanged.connect(self.on_combo_changed)
-        nav_row.addWidget(self.letter_combo, stretch=1)
-
-        next_btn = QPushButton("▶")
-        next_btn.setProperty("class", "btn-nav")
-        next_btn.clicked.connect(self.next_letter)
-        nav_row.addWidget(next_btn)
-
-        card_layout.addLayout(nav_row)
-
-        # Display Stage: Dual views (Canvas for Video vs Image Label for Photo/Skeleton)
-        stage_row = QHBoxLayout()
-        stage_row.setSpacing(12)
-
-        # Left: Visual Media Container
-        left_box = QVBoxLayout()
-        left_box.setSpacing(6)
-
+        # Visual Display Viewport (Holds Canvas for Video vs Image Label for Photo/Skeleton)
         self.video_canvas = MotionVideoGuideCanvas(self)
-        left_box.addWidget(self.video_canvas)
+        left_layout.addWidget(self.video_canvas)
 
         self.preview_label = QLabel()
-        self.preview_label.setFixedSize(220, 160)
+        self.preview_label.setFixedSize(360, 260)
         self.preview_label.setAlignment(Qt.AlignCenter)
-        self.preview_label.setStyleSheet("background: #050b1c; border: 1px solid #26386a; border-radius: 10px;")
-        left_box.addWidget(self.preview_label)
+        self.preview_label.setStyleSheet("background: #050b1c; border: 1px solid #26386a; border-radius: 14px;")
+        left_layout.addWidget(self.preview_label)
 
         # Video Player Controls
         self.vid_ctrl_row = QHBoxLayout()
-        self.vid_ctrl_row.setSpacing(4)
+        self.vid_ctrl_row.setSpacing(6)
         self.play_btn = QPushButton("⏸ Pause")
         self.play_btn.setProperty("class", "btn-vid-ctrl")
         self.play_btn.clicked.connect(self.toggle_canvas_play)
@@ -600,112 +930,179 @@ class TutorDialog(QDialog):
         self.replay_btn.setProperty("class", "btn-vid-ctrl")
         self.replay_btn.clicked.connect(self.video_canvas.reset)
         self.vid_ctrl_row.addWidget(self.replay_btn)
+        left_layout.addLayout(self.vid_ctrl_row)
 
-        left_box.addLayout(self.vid_ctrl_row)
-        stage_row.addLayout(left_box)
+        # Ghost Guide Overlay controls on webcam
+        overlay_box = QFrame()
+        overlay_box.setStyleSheet("background: #050b1c; border-radius: 8px; padding: 6px;")
+        overlay_layout = QVBoxLayout(overlay_box)
+        overlay_layout.setContentsMargins(8, 6, 8, 6)
+        overlay_layout.setSpacing(6)
 
-        # Right: Details & Video Instructions
-        right_box = QVBoxLayout()
-        right_box.setSpacing(6)
-
-        self.target_title = QLabel("Target: Letter A")
-        self.target_title.setFont(QFont('Segoe UI', 13, QFont.Bold))
-        self.target_title.setStyleSheet("color: #ffb23f;")
-        right_box.addWidget(self.target_title)
-
-        # Adaptive Motion Tag Badge
-        self.adaptive_badge = QLabel("✋ STATIC POSE (Residual MLP Tracked)")
-        self.adaptive_badge.setStyleSheet("""
-            background-color: rgba(63, 178, 255, 0.15);
-            border: 1px solid #3fb2ff;
-            border-radius: 6px;
-            padding: 4px 8px;
-            color: #3fb2ff;
-            font-size: 10px;
-            font-weight: bold;
-        """)
-        right_box.addWidget(self.adaptive_badge)
-
-        # Instructions Scroll Area
-        inst_scroll = QScrollArea()
-        inst_scroll.setFixedHeight(120)
-        inst_scroll.setWidgetResizable(True)
-        inst_scroll.setStyleSheet("background: transparent; border: none;")
-
-        self.instructions_widget = QWidget()
-        self.instructions_layout = QVBoxLayout(self.instructions_widget)
-        self.instructions_layout.setContentsMargins(0, 0, 4, 0)
-        self.instructions_layout.setSpacing(4)
-
-        self.hint_label = QLabel(ISL_LETTER_HINTS.get('A', ''))
-        self.hint_label.setWordWrap(True)
-        self.hint_label.setStyleSheet("color: #f4f6fb; font-size: 11px; line-height: 1.3;")
-        self.instructions_layout.addWidget(self.hint_label)
-
-        inst_scroll.setWidget(self.instructions_widget)
-        right_box.addWidget(inst_scroll)
-
-        stage_row.addLayout(right_box, stretch=1)
-        card_layout.addLayout(stage_row)
-
-        card.setLayout(card_layout)
-        layout.addWidget(card)
-
-        # Ghost guide overlay controls
-        self.guide_checkbox = QCheckBox("Show live guide overlay on camera")
+        self.guide_checkbox = QCheckBox("Show ghost guide overlay on camera")
         self.guide_checkbox.setChecked(self.parent_app.guide_enabled)
         self.guide_checkbox.toggled.connect(self.toggle_guide)
-        layout.addWidget(self.guide_checkbox)
+        overlay_layout.addWidget(self.guide_checkbox)
 
-        # Opacity slider
-        opacity_row = QHBoxLayout()
-        self.opacity_title = QLabel("Guide Opacity: 50%")
+        op_row = QHBoxLayout()
+        self.opacity_title = QLabel("Opacity: 50%")
         self.opacity_title.setStyleSheet("color: #93a1c6; font-size: 11px;")
-        opacity_row.addWidget(self.opacity_title)
+        op_row.addWidget(self.opacity_title)
 
         self.opacity_slider = QSlider(Qt.Horizontal)
         self.opacity_slider.setRange(15, 90)
         self.opacity_slider.setValue(int(self.parent_app.guide_opacity * 100))
         self.opacity_slider.valueChanged.connect(self.on_opacity_changed)
-        opacity_row.addWidget(self.opacity_slider, stretch=1)
-        layout.addLayout(opacity_row)
+        op_row.addWidget(self.opacity_slider, stretch=1)
+        overlay_layout.addLayout(op_row)
+        left_layout.addWidget(overlay_box)
 
-        # Real-time Match status badge
-        self.status_badge = QLabel("Align hand with guide to practice")
+        studio_row.addWidget(left_studio)
+
+        # ============================================================
+        # RIGHT COLUMN: PRACTICE DECK & INSTRUCTION STUDIO
+        # ============================================================
+        right_studio = QFrame()
+        right_studio.setStyleSheet("background-color: #14234b; border: 1px solid #26386a; border-radius: 14px;")
+        right_layout = QVBoxLayout(right_studio)
+        right_layout.setContentsMargins(14, 12, 14, 12)
+        right_layout.setSpacing(10)
+
+        # Navigation row: [◀] [Letter / Gesture Dropdown] [▶]
+        nav_row = QHBoxLayout()
+        nav_row.setSpacing(8)
+
+        prev_btn = QPushButton("◀")
+        prev_btn.setProperty("class", "btn-nav")
+        prev_btn.clicked.connect(self.prev_sign)
+        nav_row.addWidget(prev_btn)
+
+        self.sign_combo = QComboBox()
+        self.sign_combo.currentIndexChanged.connect(self.on_combo_changed)
+        nav_row.addWidget(self.sign_combo, stretch=1)
+
+        next_btn = QPushButton("▶")
+        next_btn.setProperty("class", "btn-nav")
+        next_btn.clicked.connect(self.next_sign)
+        nav_row.addWidget(next_btn)
+        right_layout.addLayout(nav_row)
+
+        # Target Title & Telemetry Badge
+        meta_row = QHBoxLayout()
+        self.target_title = QLabel("Target: Letter A")
+        self.target_title.setFont(QFont('Segoe UI', 14, QFont.Bold))
+        self.target_title.setStyleSheet("color: #ffb23f;")
+        meta_row.addWidget(self.target_title)
+        meta_row.addStretch()
+
+        self.adaptive_badge = QLabel("✋ STATIC POSE (Residual MLP)")
+        self.adaptive_badge.setStyleSheet("""
+            background-color: rgba(63, 178, 255, 0.15);
+            border: 1px solid #3fb2ff;
+            border-radius: 6px;
+            padding: 4px 10px;
+            color: #3fb2ff;
+            font-size: 10px;
+            font-weight: bold;
+        """)
+        meta_row.addWidget(self.adaptive_badge)
+        right_layout.addLayout(meta_row)
+
+        # Structured Step-by-Step Instructions Area (Spacious, modern card stack)
+        self.instructions_scroll = QScrollArea()
+        self.instructions_scroll.setWidgetResizable(True)
+        self.instructions_scroll.setStyleSheet("background: transparent; border: none;")
+
+        self.instructions_widget = QWidget()
+        self.instructions_layout = QVBoxLayout(self.instructions_widget)
+        self.instructions_layout.setContentsMargins(0, 0, 4, 0)
+        self.instructions_layout.setSpacing(8)
+        self.instructions_scroll.setWidget(self.instructions_widget)
+        right_layout.addWidget(self.instructions_scroll, stretch=1)
+
+        # Live Practice Match Status HUD
+        self.status_badge = QLabel("Target: A | Perform sign in camera to practice")
         self.status_badge.setAlignment(Qt.AlignCenter)
         self.status_badge.setStyleSheet("""
-            background-color: rgba(38, 56, 106, 0.4);
+            background-color: rgba(11, 22, 51, 0.8);
             border: 1px solid #26386a;
-            border-radius: 8px;
-            padding: 8px;
+            border-radius: 10px;
+            padding: 10px;
             color: #93a1c6;
-            font-weight: 600;
-            font-size: 11px;
+            font-weight: 700;
+            font-size: 12px;
         """)
-        layout.addWidget(self.status_badge)
+        right_layout.addWidget(self.status_badge)
 
-        # Done button
+        # Done Button
         done_btn = QPushButton("Done")
-        done_btn.setFixedHeight(38)
+        done_btn.setFixedHeight(40)
         done_btn.setStyleSheet("""
             QPushButton {
                 background-color: #f4f6fb;
                 color: #0b1633;
                 border: none;
                 border-radius: 10px;
-                font-weight: bold;
-                font-size: 12px;
+                font-weight: 800;
+                font-size: 13px;
             }
             QPushButton:hover {
                 background-color: #ffb23f;
             }
         """)
         done_btn.clicked.connect(self.accept)
-        layout.addWidget(done_btn)
+        right_layout.addWidget(done_btn)
+
+        studio_row.addWidget(right_studio, stretch=1)
+        layout.addLayout(studio_row)
 
         self.setLayout(layout)
+
+        # Initialize with letters
+        self.switch_category("letters", initial_sync=False)
         self.set_guide_mode(self.guide_style, update_view_only=True)
-        self.sync_letter(self.parent_app.current_tutor_letter)
+        self.sync_target(self.parent_app.current_tutor_letter)
+
+    def accept(self):
+        if hasattr(self.parent_app, 'inference_engine') and self.parent_app.inference_engine:
+            self.parent_app.inference_engine.target_gesture_focus = None
+        super().accept()
+
+    def closeEvent(self, event):
+        if hasattr(self.parent_app, 'inference_engine') and self.parent_app.inference_engine:
+            self.parent_app.inference_engine.target_gesture_focus = None
+        super().closeEvent(event)
+
+    def switch_category(self, cat, initial_sync=True):
+        self.current_category = cat
+        if hasattr(self.parent_app, 'set_app_mode'):
+            self.parent_app.set_app_mode(cat)
+        self.btn_cat_letters.setProperty("class", "btn-cat-active" if cat == "letters" else "btn-cat")
+        self.btn_cat_gestures.setProperty("class", "btn-cat-active" if cat == "gestures" else "btn-cat")
+        self.btn_cat_letters.style().unpolish(self.btn_cat_letters)
+        self.btn_cat_letters.style().polish(self.btn_cat_letters)
+        self.btn_cat_gestures.style().unpolish(self.btn_cat_gestures)
+        self.btn_cat_gestures.style().polish(self.btn_cat_gestures)
+
+        self.sign_combo.blockSignals(True)
+        self.sign_combo.clear()
+
+        if cat == "letters":
+            for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+                suffix = " 🌊 [Motion]" if c in ('J', 'Z') else ""
+                self.sign_combo.addItem(f"Letter {c}{suffix}", c)
+            target = self.parent_app.current_tutor_letter if self.parent_app.current_tutor_letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" else "A"
+        else:
+            for g in COMMON_GESTURE_NAMES:
+                self.sign_combo.addItem(f"Gesture: {g} 🌊", g)
+            target = COMMON_GESTURE_NAMES[0]
+            # Gestures default to motion video mode
+            self.set_guide_mode('video')
+
+        self.sign_combo.blockSignals(False)
+
+        if initial_sync:
+            self.sync_target(target)
 
     def set_guide_mode(self, mode, update_view_only=False):
         self.guide_style = mode
@@ -738,7 +1135,7 @@ class TutorDialog(QDialog):
                 if w:
                     w.hide()
 
-        self.sync_letter(self.parent_app.current_tutor_letter)
+        self.sync_target(self.parent_app.current_tutor_letter)
 
     def toggle_canvas_play(self):
         self.video_canvas.toggle_play()
@@ -748,91 +1145,130 @@ class TutorDialog(QDialog):
         self.video_canvas.toggle_speed()
         self.speed_btn.setText("🐢 0.5x" if self.video_canvas.speed == 0.5 else "⚡ 1.0x")
 
-    def sync_letter(self, letter):
-        idx = ord(letter) - ord('A')
-        self.letter_combo.blockSignals(True)
-        self.letter_combo.setCurrentIndex(idx)
-        self.letter_combo.blockSignals(False)
+    def sync_target(self, target):
+        target = str(target).upper()
+        self.parent_app.current_tutor_letter = target
+        if hasattr(self.parent_app, 'inference_engine') and self.parent_app.inference_engine:
+            if target in COMMON_GESTURE_NAMES:
+                self.parent_app.inference_engine.target_gesture_focus = target
+            else:
+                self.parent_app.inference_engine.target_gesture_focus = None
 
-        self.target_title.setText(f"Target: Letter {letter}")
-        self.video_canvas.setLetter(letter)
+        # Set combo index
+        self.sign_combo.blockSignals(True)
+        idx = self.sign_combo.findData(target)
+        if idx >= 0:
+            self.sign_combo.setCurrentIndex(idx)
+        self.sign_combo.blockSignals(False)
 
-        # Clear existing instructions widgets
+        # Title
+        label_prefix = "Gesture" if target in COMMON_GESTURE_NAMES else "Letter"
+        self.target_title.setText(f"Target: {label_prefix} {target}")
+        self.video_canvas.setSign(target)
+
+        # Clear previous instruction cards
         while self.instructions_layout.count():
             item = self.instructions_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
+            w = item.widget()
+            if w:
+                w.deleteLater()
 
-        # Check if letter has structured adaptive video instructions
-        if letter in ADAPTIVE_VIDEO_INSTRUCTIONS:
-            info = ADAPTIVE_VIDEO_INSTRUCTIONS[letter]
+        # Build structured step cards
+        if target in ADAPTIVE_VIDEO_INSTRUCTIONS:
+            info = ADAPTIVE_VIDEO_INSTRUCTIONS[target]
             self.adaptive_badge.setText(info['badge'])
             self.adaptive_badge.setStyleSheet("""
                 background-color: rgba(255, 178, 63, 0.2);
                 border: 1px solid #ffb23f;
                 border-radius: 6px;
-                padding: 4px 8px;
+                padding: 4px 10px;
                 color: #ffb23f;
                 font-size: 10px;
                 font-weight: bold;
             """)
 
-            # Build step-by-step video instruction cards
             for step_title, step_desc in info['steps']:
                 s_box = QFrame()
-                s_box.setStyleSheet("background: #050b1c; border-left: 3px solid #ffb23f; border-radius: 4px; padding: 4px;")
+                s_box.setStyleSheet("""
+                    QFrame {
+                        background-color: #050b1c;
+                        border-left: 3px solid #ffb23f;
+                        border-radius: 6px;
+                    }
+                """)
                 s_layout = QVBoxLayout(s_box)
-                s_layout.setContentsMargins(6, 4, 6, 4)
-                s_layout.setSpacing(2)
+                s_layout.setContentsMargins(10, 8, 10, 8)
+                s_layout.setSpacing(3)
 
                 t_lbl = QLabel(step_title)
-                t_lbl.setFont(QFont('Segoe UI', 9, QFont.Bold))
+                t_lbl.setFont(QFont('Segoe UI', 10, QFont.Bold))
                 t_lbl.setStyleSheet("color: #ffb23f;")
                 s_layout.addWidget(t_lbl)
 
                 d_lbl = QLabel(step_desc)
-                d_lbl.setFont(QFont('Segoe UI', 8))
+                d_lbl.setFont(QFont('Segoe UI', 9))
                 d_lbl.setWordWrap(True)
-                d_lbl.setStyleSheet("color: #f4f6fb;")
+                d_lbl.setStyleSheet("color: #f4f6fb; line-height: 1.3;")
                 s_layout.addWidget(d_lbl)
 
                 self.instructions_layout.addWidget(s_box)
 
-            # Kinematic velocity tip
-            tip_lbl = QLabel(f"💡 Kinematic Tip: {info['kinematic_tip']}")
+            # Kinematic tip callout
+            tip_box = QFrame()
+            tip_box.setStyleSheet("background: rgba(63, 178, 255, 0.1); border: 1px solid rgba(63, 178, 255, 0.3); border-radius: 6px;")
+            tip_layout = QVBoxLayout(tip_box)
+            tip_layout.setContentsMargins(10, 8, 10, 8)
+            tip_lbl = QLabel(f"💡 <b>Kinematic Pro Tip:</b> {info['kinematic_tip']}")
             tip_lbl.setWordWrap(True)
-            tip_lbl.setFont(QFont('Segoe UI', 8, QFont.StyleItalic))
-            tip_lbl.setStyleSheet("color: #93a1c6; padding-top: 4px;")
-            self.instructions_layout.addWidget(tip_lbl)
+            tip_lbl.setFont(QFont('Segoe UI', 9))
+            tip_lbl.setStyleSheet("color: #3fb2ff;")
+            tip_layout.addWidget(tip_lbl)
+            self.instructions_layout.addWidget(tip_box)
+
         else:
-            self.adaptive_badge.setText("✋ STATIC POSE (Residual MLP Tracked)")
+            self.adaptive_badge.setText("✋ STATIC HANDSHAPE (99.76% MLP)")
             self.adaptive_badge.setStyleSheet("""
                 background-color: rgba(63, 178, 255, 0.15);
                 border: 1px solid #3fb2ff;
                 border-radius: 6px;
-                padding: 4px 8px;
+                padding: 4px 10px;
                 color: #3fb2ff;
                 font-size: 10px;
                 font-weight: bold;
             """)
 
-            hint_text = ISL_LETTER_HINTS.get(letter, "Observe the guide image and align hand posture.")
-            h_lbl = QLabel(f"<b>Execution Guide:</b><br>{hint_text}")
-            h_lbl.setWordWrap(True)
-            h_lbl.setFont(QFont('Segoe UI', 9))
-            h_lbl.setStyleSheet("color: #f4f6fb; line-height: 1.4;")
-            self.instructions_layout.addWidget(h_lbl)
+            hint_text = ISL_LETTER_HINTS.get(target, "Align your handshape according to the visual guide.")
+            h_box = QFrame()
+            h_box.setStyleSheet("background-color: #050b1c; border-left: 3px solid #3fb2ff; border-radius: 6px;")
+            h_layout = QVBoxLayout(h_box)
+            h_layout.setContentsMargins(10, 8, 10, 8)
 
-            tip_lbl = QLabel("💡 Tip: Hold handshape steady for 800ms. The 99.76% MLP classifier will auto-confirm.")
+            t_lbl = QLabel("Execution Guide")
+            t_lbl.setFont(QFont('Segoe UI', 10, QFont.Bold))
+            t_lbl.setStyleSheet("color: #3fb2ff;")
+            h_layout.addWidget(t_lbl)
+
+            d_lbl = QLabel(hint_text)
+            d_lbl.setFont(QFont('Segoe UI', 9))
+            d_lbl.setWordWrap(True)
+            d_lbl.setStyleSheet("color: #f4f6fb; line-height: 1.4;")
+            h_layout.addWidget(d_lbl)
+            self.instructions_layout.addWidget(h_box)
+
+            tip_box = QFrame()
+            tip_box.setStyleSheet("background: rgba(255, 178, 63, 0.1); border: 1px solid rgba(255, 178, 63, 0.3); border-radius: 6px;")
+            tip_layout = QVBoxLayout(tip_box)
+            tip_layout.setContentsMargins(10, 8, 10, 8)
+            tip_lbl = QLabel("💡 <b>Pro Tip:</b> Hold handshape steady for 800ms. The 99.76% Deep Residual MLP will auto-confirm.")
             tip_lbl.setWordWrap(True)
-            tip_lbl.setFont(QFont('Segoe UI', 8, QFont.StyleItalic))
-            tip_lbl.setStyleSheet("color: #93a1c6; padding-top: 6px;")
-            self.instructions_layout.addWidget(tip_lbl)
+            tip_lbl.setFont(QFont('Segoe UI', 9))
+            tip_lbl.setStyleSheet("color: #ffb23f;")
+            tip_layout.addWidget(tip_lbl)
+            self.instructions_layout.addWidget(tip_box)
 
-        # Image preview for Photo / Skeleton modes
+        # Image preview for Photo / Skeleton modes (for letters)
         if self.guide_style != 'video':
-            img = self.parent_app.load_guide_image(letter, style=self.guide_style)
+            img = self.parent_app.load_guide_image(target, style=self.guide_style)
             if img is not None:
                 if img.ndim == 3 and img.shape[2] == 4:
                     rgb = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA)
@@ -843,35 +1279,38 @@ class TutorDialog(QDialog):
                     h_i, w_i, ch = rgb.shape
                     qimg = QImage(rgb.data, w_i, h_i, ch * w_i, QImage.Format_RGB888)
 
-                pix = QPixmap.fromImage(qimg).scaled(220, 160, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pix = QPixmap.fromImage(qimg).scaled(360, 260, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 self.preview_label.setPixmap(pix)
             else:
-                self.preview_label.setText(f"Sign {letter}")
+                self.preview_label.setText(f"Sign: {target}\n(Select 🎬 Motion Video)")
+                self.preview_label.setFont(QFont('Segoe UI', 12, QFont.Bold))
+                self.preview_label.setStyleSheet("color: #93a1c6; background: #050b1c; border-radius: 14px;")
 
     def on_combo_changed(self, idx):
-        letter = chr(ord('A') + idx)
-        # For adaptive motion gestures (J, Z), auto-switch to Motion Video guide
-        if letter in ('J', 'Z') and self.guide_style != 'video':
+        target = self.sign_combo.itemData(idx)
+        if not target:
+            return
+
+        # For gestures and J/Z, auto switch to video mode
+        if (target in COMMON_GESTURE_NAMES or target in ('J', 'Z')) and self.guide_style != 'video':
             self.set_guide_mode('video', update_view_only=True)
 
-        self.parent_app.on_tutor_letter_changed(letter)
-        self.sync_letter(letter)
+        self.parent_app.on_tutor_letter_changed(target)
+        self.sync_target(target)
 
-    def prev_letter(self):
-        curr = self.parent_app.current_tutor_letter
-        new_l = chr(ord('A') + (ord(curr) - ord('A') - 1) % 26)
-        if new_l in ('J', 'Z') and self.guide_style != 'video':
-            self.set_guide_mode('video', update_view_only=True)
-        self.parent_app.on_tutor_letter_changed(new_l)
-        self.sync_letter(new_l)
+    def prev_sign(self):
+        cur_idx = self.sign_combo.currentIndex()
+        count = self.sign_combo.count()
+        if count > 0:
+            new_idx = (cur_idx - 1) % count
+            self.sign_combo.setCurrentIndex(new_idx)
 
-    def next_letter(self):
-        curr = self.parent_app.current_tutor_letter
-        new_l = chr(ord('A') + (ord(curr) - ord('A') + 1) % 26)
-        if new_l in ('J', 'Z') and self.guide_style != 'video':
-            self.set_guide_mode('video', update_view_only=True)
-        self.parent_app.on_tutor_letter_changed(new_l)
-        self.sync_letter(new_l)
+    def next_sign(self):
+        cur_idx = self.sign_combo.currentIndex()
+        count = self.sign_combo.count()
+        if count > 0:
+            new_idx = (cur_idx + 1) % count
+            self.sign_combo.setCurrentIndex(new_idx)
 
     def toggle_guide(self, checked):
         self.parent_app.guide_enabled = checked
@@ -880,33 +1319,33 @@ class TutorDialog(QDialog):
 
     def on_opacity_changed(self, val):
         self.parent_app.guide_opacity = val / 100.0
-        self.opacity_title.setText(f"Guide Opacity: {val}%")
+        self.opacity_title.setText(f"Opacity: {val}%")
         if self.parent_app.video_thread:
             self.parent_app.video_thread.guide_opacity = self.parent_app.guide_opacity
 
     def update_match(self, prediction, confidence):
         target = self.parent_app.current_tutor_letter
-        if prediction == target and confidence >= 0.60:
+        if prediction and prediction.upper() == target.upper() and confidence >= 0.60:
             self.status_badge.setText(f"🎯 EXCELLENT! Matched '{prediction}' ({confidence:.1%})")
             self.status_badge.setStyleSheet("""
                 background-color: rgba(63, 185, 80, 0.25);
-                border: 1px solid #3fb950;
-                border-radius: 8px;
-                padding: 8px;
+                border: 2px solid #3fb950;
+                border-radius: 10px;
+                padding: 10px;
                 color: #3fb950;
-                font-weight: bold;
-                font-size: 11px;
+                font-weight: 800;
+                font-size: 13px;
             """)
         else:
             self.status_badge.setText(f"Target: {target} | Detected: {prediction if prediction else '...'} ({confidence:.0%})")
             self.status_badge.setStyleSheet("""
-                background-color: rgba(255, 178, 63, 0.15);
-                border: 1px solid #ffb23f;
-                border-radius: 8px;
-                padding: 8px;
-                color: #ffb23f;
+                background-color: rgba(11, 22, 51, 0.85);
+                border: 1px solid #26386a;
+                border-radius: 10px;
+                padding: 10px;
+                color: #93a1c6;
                 font-weight: 600;
-                font-size: 11px;
+                font-size: 12px;
             """)
 
 
@@ -1177,6 +1616,27 @@ class ISLGUIApp(QMainWindow):
 
         self.init_ui()
 
+    def set_app_mode(self, mode):
+        if hasattr(self, 'inference_engine') and self.inference_engine:
+            self.inference_engine.app_mode = mode
+
+        for btn, m in [(self.btn_mode_auto, 'auto'), (self.btn_mode_gestures, 'gestures'), (self.btn_mode_letters, 'letters')]:
+            btn.setProperty("class", "seg-btn-active" if mode == m else "seg-btn")
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
+
+        if mode == 'gestures':
+            self.glyph_caption.setText("Perform gesture (Hello, Thank You, Namaste...)")
+            self.glyph_letter.setText("??")
+        elif mode == 'letters':
+            self.glyph_caption.setText("Hold letter steady (A-Z)")
+            self.glyph_letter.setText("??")
+        else:
+            self.glyph_caption.setText("Show a letter or gesture")
+            self.glyph_letter.setText("?")
+        self.glyph_hold_bar.setValue(0)
+        self.hold_count = 0
+
     def load_guide_image(self, letter, style='photo'):
         letter = str(letter).upper()
         cache_key = (letter, style)
@@ -1200,9 +1660,9 @@ class ISLGUIApp(QMainWindow):
         return None
 
     def init_ui(self):
-        self.setWindowTitle("ISL Fingerspell")
-        self.resize(760, 880)
-        self.setMinimumSize(640, 720)
+        self.setWindowTitle("ISL Fingerspell & Gesture Studio")
+        self.resize(960, 720)
+        self.setMinimumSize(800, 600)
 
         # Global stylesheet matching mobile/app/styles.css tokens
         self.setStyleSheet("""
@@ -1230,6 +1690,33 @@ class ISLGUIApp(QMainWindow):
             }
             QPushButton.pill:pressed {
                 background-color: #050b1c;
+            }
+            QPushButton.seg-btn {
+                min-height: 28px;
+                padding: 0 12px;
+                border: 1px solid #26386a;
+                border-radius: 14px;
+                background-color: transparent;
+                color: #93a1c6;
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            QPushButton.seg-btn:hover {
+                background-color: #14234b;
+                color: #f4f6fb;
+                border-color: #ffb23f;
+            }
+            QPushButton.seg-btn-active {
+                min-height: 28px;
+                padding: 0 12px;
+                border: 1px solid #ffb23f;
+                border-radius: 14px;
+                background-color: #ffb23f;
+                color: #0b1633;
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                font-size: 11px;
+                font-weight: 800;
             }
             /* Mobile control buttons */
             QPushButton.btn-ctrl {
@@ -1309,6 +1796,23 @@ class ISLGUIApp(QMainWindow):
 
         wordmark_container.setLayout(wm_layout)
         topbar.addWidget(wordmark_container)
+        topbar.addStretch()
+
+        # Mode Selection Pills: [ ? Auto ] [ ?? Gestures ] [ ?? Alphabet ]
+        self.btn_mode_auto = QPushButton("? Auto")
+        self.btn_mode_auto.setProperty("class", "seg-btn-active")
+        self.btn_mode_auto.clicked.connect(lambda: self.set_app_mode('auto'))
+        topbar.addWidget(self.btn_mode_auto)
+
+        self.btn_mode_gestures = QPushButton("?? Gestures")
+        self.btn_mode_gestures.setProperty("class", "seg-btn")
+        self.btn_mode_gestures.clicked.connect(lambda: self.set_app_mode('gestures'))
+        topbar.addWidget(self.btn_mode_gestures)
+
+        self.btn_mode_letters = QPushButton("?? Alphabet")
+        self.btn_mode_letters.setProperty("class", "seg-btn")
+        self.btn_mode_letters.clicked.connect(lambda: self.set_app_mode('letters'))
+        topbar.addWidget(self.btn_mode_letters)
         topbar.addStretch()
 
         # Action pills
@@ -1481,31 +1985,81 @@ class ISLGUIApp(QMainWindow):
 
         app_layout.addLayout(controls_layout)
 
+        # Ensure buttons do not steal keyboard focus from window
+        for btn in [learn_btn, letters_btn, settings_btn, self.btn_mode_auto, self.btn_mode_gestures, self.btn_mode_letters, self.delete_btn, self.add_btn, self.space_btn, self.clear_btn, self.speak_btn]:
+            btn.setFocusPolicy(Qt.NoFocus)
+
+        # Global keyboard shortcuts
+        from PyQt5.QtWidgets import QShortcut
+        from PyQt5.QtGui import QKeySequence
+
+        QShortcut(QKeySequence(Qt.Key_Space), self, self.on_shortcut_space)
+        QShortcut(QKeySequence(Qt.Key_Backspace), self, self.on_delete_clicked)
+        QShortcut(QKeySequence(Qt.Key_Return), self, self.on_speak_clicked)
+        QShortcut(QKeySequence(Qt.Key_Enter), self, self.on_speak_clicked)
+        QShortcut(QKeySequence(Qt.Key_Escape), self, self.on_clear_clicked)
+        QShortcut(QKeySequence("Ctrl+C"), self, self.on_clear_clicked)
+        QShortcut(QKeySequence("Ctrl+T"), self, self.on_speak_clicked)
+        QShortcut(QKeySequence("Ctrl+L"), self, self.open_tutor)
+        QShortcut(QKeySequence("Ctrl+P"), self, self.open_pamphlet)
+        QShortcut(QKeySequence("Ctrl+S"), self, self.open_settings)
+        QShortcut(QKeySequence("Ctrl+G"), self, self.toggle_gesture_letter_mode)
+        QShortcut(QKeySequence(Qt.Key_F1), self, self.open_tutor)
+        QShortcut(QKeySequence(Qt.Key_F2), self, self.toggle_gesture_letter_mode)
+
         # Caret blink timer
         self.caret_visible = True
         self.caret_timer = QTimer(self)
         self.caret_timer.timeout.connect(self.toggle_caret)
         self.caret_timer.start(550)
 
+    def on_shortcut_space(self):
+        """Space key handler: captures current camera sign if confident, else inserts space"""
+        if self.last_prediction and self.last_confidence >= 0.50:
+            self.on_add_clicked()
+        else:
+            self.on_space_clicked()
+
+    def toggle_gesture_letter_mode(self):
+        """Toggle between pure Gestures and Alphabet modes via 'G' key"""
+        cur = getattr(self.inference_engine, 'app_mode', 'auto')
+        next_mode = 'gestures' if cur != 'gestures' else 'letters'
+        self.set_app_mode(next_mode)
+
     def keyPressEvent(self, event):
-        """Keyboard shortcuts matching mobile experience"""
-        if event.key() == Qt.Key_Space:
-            if self.last_prediction and self.last_confidence >= 0.55:
-                self.on_add_clicked()
-            else:
-                self.on_space_clicked()
-        elif event.key() == Qt.Key_Backspace:
+        """Comprehensive keyboard handling: shortcuts + direct physical key typing"""
+        key = event.key()
+        text = event.text()
+        modifiers = event.modifiers()
+        has_ctrl = bool(modifiers & Qt.ControlModifier)
+
+        if key == Qt.Key_Space:
+            self.on_shortcut_space()
+        elif key == Qt.Key_Backspace:
             self.on_delete_clicked()
-        elif event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_T):
+        elif key in (Qt.Key_Return, Qt.Key_Enter):
             self.on_speak_clicked()
-        elif event.key() in (Qt.Key_C, Qt.Key_Escape):
+        elif key == Qt.Key_Escape:
             self.on_clear_clicked()
-        elif event.key() == Qt.Key_L:
+        elif has_ctrl and key == Qt.Key_C:
+            self.on_clear_clicked()
+        elif has_ctrl and key == Qt.Key_T:
+            self.on_speak_clicked()
+        elif has_ctrl and key == Qt.Key_L:
             self.open_tutor()
-        elif event.key() == Qt.Key_P:
+        elif has_ctrl and key == Qt.Key_P:
             self.open_pamphlet()
-        elif event.key() == Qt.Key_S:
+        elif has_ctrl and key == Qt.Key_S:
             self.open_settings()
+        elif has_ctrl and key == Qt.Key_G:
+            self.toggle_gesture_letter_mode()
+        elif key == Qt.Key_F1:
+            self.open_tutor()
+        elif key == Qt.Key_F2:
+            self.toggle_gesture_letter_mode()
+        elif text and text.isalpha() and len(text) == 1:
+            # Direct typing support for all keyboard letter keys (A-Z)
+            self.append_letter(text.upper())
         else:
             super().keyPressEvent(event)
 
@@ -1544,6 +2098,8 @@ class ISLGUIApp(QMainWindow):
 
         if not prediction:
             self.glyph_letter.setText("—")
+            self.glyph_letter.setFont(QFont('Segoe UI', 38, QFont.Bold))
+            self.glyph_box.setFixedSize(110, 140)
             self.glyph_box.setStyleSheet("""
                 QFrame {
                     background-color: rgba(11, 22, 51, 0.82);
@@ -1551,42 +2107,60 @@ class ISLGUIApp(QMainWindow):
                     border-radius: 12px;
                 }
             """)
-            self.glyph_caption.setText("Show a letter")
+            self.glyph_caption.setText("Show a letter or gesture")
             self.glyph_hold_bar.setValue(0)
             self.hold_count = 0
             return
 
-        # Active glyph display
+        # Active glyph display with adaptive font scaling
         self.glyph_letter.setText(prediction)
-        self.glyph_box.setStyleSheet("""
-            QFrame {
-                background-color: rgba(11, 22, 51, 0.88);
-                border: 2px solid #ffb23f;
-                border-radius: 12px;
-            }
-        """)
-        engine_str = getattr(self.inference_engine, 'active_engine', 'MLP')
-        self.glyph_caption.setText(f"{confidence:.0%} Match • {engine_str}")
+        is_gesture = len(prediction) > 1
 
-        # Auto-capture hold-to-add logic (identical to mobile HOLD_TO_ADD_MS = 900ms)
+        if is_gesture:
+            self.glyph_letter.setFont(QFont('Segoe UI', 15, QFont.Bold))
+            self.glyph_box.setFixedSize(145, 140)
+            self.glyph_box.setStyleSheet("""
+                QFrame {
+                    background-color: rgba(11, 22, 51, 0.92);
+                    border: 2px solid #3fb2ff;
+                    border-radius: 12px;
+                }
+            """)
+            target_hold = 12  # Fast ~400ms confirmation for dynamic gestures
+        else:
+            self.glyph_letter.setFont(QFont('Segoe UI', 38, QFont.Bold))
+            self.glyph_box.setFixedSize(110, 140)
+            self.glyph_box.setStyleSheet("""
+                QFrame {
+                    background-color: rgba(11, 22, 51, 0.88);
+                    border: 2px solid #ffb23f;
+                    border-radius: 12px;
+                }
+            """)
+            target_hold = 25  # ~850ms hold for steady static letters
+
+        engine_str = getattr(self.inference_engine, 'active_engine', 'MLP')
+        self.glyph_caption.setText(f"{confidence:.0%} • {engine_str}")
+
+        # Auto-capture hold-to-add logic
         if self.auto_capture_enabled and confidence >= 0.60:
             if self.cooldown_frames > 0:
                 self.cooldown_frames -= 1
             elif prediction == self.last_held_char:
                 self.hold_count += 1
-                progress = min(1.0, self.hold_count / float(self.hold_target))
+                progress = min(1.0, self.hold_count / float(target_hold))
                 self.glyph_hold_bar.setValue(int(progress * 100))
 
-                if self.hold_count >= self.hold_target:
-                    # Hold completed: Add letter to tape!
+                if self.hold_count >= target_hold:
+                    # Hold completed: Add letter or gesture word to tape!
                     self.append_letter(prediction)
                     self.hold_count = 0
                     self.glyph_hold_bar.setValue(0)
-                    self.cooldown_frames = 12  # ~400ms cooldown so it doesn't duplicate
+                    self.cooldown_frames = 15  # Cooldown prevents accidental repeat
             else:
                 self.last_held_char = prediction
                 self.hold_count = 1
-                self.glyph_hold_bar.setValue(int(100 / self.hold_target))
+                self.glyph_hold_bar.setValue(int(100 / target_hold))
         else:
             self.hold_count = 0
             self.glyph_hold_bar.setValue(0)
@@ -1596,7 +2170,18 @@ class ISLGUIApp(QMainWindow):
             self.tutor_dialog.update_match(prediction, confidence)
 
     def append_letter(self, letter):
-        self.spelled_letters.append(letter)
+        if len(letter) > 1:
+            # Multi-character gesture word (e.g. "HELLO", "THANK YOU")
+            if self.spelled_letters and self.spelled_letters[-1] != " ":
+                self.spelled_letters.append(" ")
+            self.spelled_letters.append(letter)
+            self.spelled_letters.append(" ")
+            try:
+                self.inference_engine.tts_engine.speak(letter)
+            except Exception:
+                pass
+        else:
+            self.spelled_letters.append(letter)
         self.update_tape_display()
 
     def update_tape_display(self):
